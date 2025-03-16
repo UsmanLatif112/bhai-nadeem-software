@@ -16,16 +16,17 @@ def initialize_db():
 
     # Inventory Table
     cursor.execute('''CREATE TABLE IF NOT EXISTS inventory (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        bike_name TEXT,
-                        bike_model TEXT,
-                        chassis_no TEXT UNIQUE,
-                        reg_no TEXT,
-                        client_name TEXT,
-                        client_mobile TEXT,  
-                        client_cnic TEXT,    
-                        purchase_date TEXT DEFAULT (DATE('now')),
-                        product_status TEXT DEFAULT 'Purchased')''')
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    bike_name TEXT,
+                    bike_model TEXT,
+                    chassis_no TEXT,
+                    reg_no TEXT UNIQUE,
+                    purchase_price REAL,
+                    purchase_from TEXT,
+                    client_mobile TEXT,
+                    client_cnic TEXT,
+                    purchase_date TEXT,
+                    product_status TEXT DEFAULT 'Purchased')''')
 
     
     # Sales Table Modification
@@ -347,93 +348,67 @@ class NewSaleDialog(QDialog):
             remaining = float(self.sale_price.text()) - float(self.advance_payment.text())
             self.monthly_installment.setText(str(round(remaining / self.duration.value(), 2)))
  
-class AddInventoryDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Add New Inventory")
-        self.setGeometry(300, 300, 400, 350)
-        layout = QFormLayout()
-
-        self.bike_name = QLineEdit()
-        self.bike_model = QLineEdit()
-        self.chassis_no = QLineEdit()
-        self.reg_no = QLineEdit()
-        self.client_name = QLineEdit()
-        self.client_mobile = QLineEdit()  # New
-        self.client_cnic = QLineEdit()    # New
-
-        layout.addRow("Bike Name:", self.bike_name)
-        layout.addRow("Bike Model:", self.bike_model)
-        layout.addRow("Chassis No (Unique):", self.chassis_no)
-        layout.addRow("Reg No (Optional):", self.reg_no)
-        layout.addRow("Client Name:", self.client_name)
-        layout.addRow("Client Mobile:", self.client_mobile)  # New
-        layout.addRow("Client CNIC:", self.client_cnic)      # New
-
-        self.submit_button = QPushButton("Add Inventory")
-        self.submit_button.clicked.connect(self.add_inventory)
-        layout.addWidget(self.submit_button)
-
-        self.setLayout(layout)
-
-    def add_inventory(self):
-        conn = sqlite3.connect("pos_database.db")
-        cursor = conn.cursor()
-        try:
-            cursor.execute("INSERT INTO inventory (bike_name, bike_model, chassis_no, reg_no, client_name, client_mobile, client_cnic) VALUES (?, ?, ?, ?, ?, ?, ?)", 
-                (self.bike_name.text(), self.bike_model.text(), self.chassis_no.text(), self.reg_no.text() if self.reg_no.text() else "None", self.client_name.text(), self.client_mobile.text(), self.client_cnic.text()))
-            conn.commit()
-            QMessageBox.information(self, "Success", "Inventory added successfully!")
-            self.accept()
-        except sqlite3.IntegrityError:
-            QMessageBox.warning(self, "Error", "Chassis number already exists.")
-        finally:
-            conn.close()
-
-
-    def open_add_inventory_dialog(self):
-        dialog = AddInventoryDialog(self)
-        if dialog.exec():
-            self.load_inventory()
-
+# Inventory Management Page
 class InventoryPage(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Inventory Management")
-        self.setGeometry(200, 200, 800, 400)
+        self.setGeometry(200, 200, 700, 450)  # Adjust size if needed
         layout = QVBoxLayout()
-
+        
         self.table = QTableWidget()
-        self.table.setColumnCount(7)
-        self.table.setHorizontalHeaderLabels(["ID", "Bike Name", "Bike Model", "Chassis No", "Reg No", "Client Name", "Purchase Date", "Status"])
+        self.table.setColumnCount(11)  # Update column count if you've added or removed columns
+        self.table.setHorizontalHeaderLabels(["ID", "Bike Name", "Bike Model", "Chassis No", "Reg No", "Purchase Price", "Purchase From", "Client Mobile", "Client CNIC", "Purchase Date", "Status"])
         layout.addWidget(self.table)
 
+        # Buttons for interacting with the inventory
         self.add_button = QPushButton("Add New Inventory")
         self.add_button.clicked.connect(self.open_add_inventory_dialog)
         layout.addWidget(self.add_button)
 
+        self.delete_button = QPushButton("Delete Selected Inventory")
+        self.delete_button.clicked.connect(self.delete_selected_inventory)
+        layout.addWidget(self.delete_button)
+
+        self.refresh_button = QPushButton("Refresh Inventory List")
+        self.refresh_button.clicked.connect(self.load_inventory)
+        layout.addWidget(self.refresh_button)
+
         self.load_inventory()
         self.setLayout(layout)
 
-    def open_add_inventory_dialog(self):
-        dialog = AddInventoryDialog(self)
-        if dialog.exec():
-            self.load_inventory()
-
     def load_inventory(self):
+        # Load data from the database and populate the table
         conn = sqlite3.connect("pos_database.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT id, bike_name, bike_model, chassis_no, reg_no, client_name, purchase_date, product_status FROM inventory")
+        cursor.execute("SELECT * FROM inventory ORDER BY id DESC")
         records = cursor.fetchall()
         conn.close()
 
         self.table.setRowCount(len(records))
         for row_idx, row_data in enumerate(records):
             for col_idx, col_data in enumerate(row_data):
-                item = QTableWidgetItem(str(col_data))
-                self.table.setItem(row_idx, col_idx, item)
+                self.table.setItem(row_idx, col_idx, QTableWidgetItem(str(col_data)))
 
-           
+    def open_add_inventory_dialog(self):
+        dialog = AddInventoryDialog(self)
+        dialog.exec()
+        self.load_inventory()
+
+    def delete_selected_inventory(self):
+        selected_row = self.table.currentRow()
+        if selected_row >= 0:
+            reg_no = self.table.item(selected_row, 4).text()  # Assuming 'reg_no' is in the 5th column
+            conn = sqlite3.connect("pos_database.db")
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM inventory WHERE reg_no = ?", (reg_no,))
+            conn.commit()
+            conn.close()
+            self.load_inventory()
+        else:
+            QMessageBox.warning(self, "Warning", "Please select a row to delete.")
+
+            
             
 
 # Add Inventory Dialog
@@ -448,34 +423,42 @@ class AddInventoryDialog(QDialog):
         self.bike_model = QLineEdit()
         self.chassis_no = QLineEdit()
         self.reg_no = QLineEdit()
-        self.client_name = QLineEdit()
-        
+        self.purchase_price = QLineEdit()
+        self.purchase_from = QLineEdit()
+        self.client_mobile = QLineEdit()
+        self.client_cnic = QLineEdit()
+
         layout.addRow("Bike Name:", self.bike_name)
         layout.addRow("Bike Model:", self.bike_model)
-        layout.addRow("Chassis No (Unique):", self.chassis_no)
-        layout.addRow("Reg No (Optional):", self.reg_no)
-        layout.addRow("Client Name:", self.client_name)
+        layout.addRow("Chassis No:", self.chassis_no)
+        layout.addRow("Reg No:", self.reg_no)
+        layout.addRow("Purchase Price:", self.purchase_price)
+        layout.addRow("Purchase From:", self.purchase_from)
+        layout.addRow("Client Mobile:", self.client_mobile)
+        layout.addRow("Client CNIC:", self.client_cnic)
 
-        self.submit_button = QPushButton("Add Inventory")
-        self.submit_button.clicked.connect(self.add_inventory)
-        layout.addWidget(self.submit_button)
+        self.add_button = QPushButton("Add")
+        self.add_button.clicked.connect(self.add_inventory)
+        layout.addWidget(self.add_button)
 
         self.setLayout(layout)
 
     def add_inventory(self):
         conn = sqlite3.connect("pos_database.db")
         cursor = conn.cursor()
+        current_date = QDate.currentDate().toString("yyyy-MM-dd")  # Get current date in the format YYYY-MM-DD
         try:
-            cursor.execute("INSERT INTO inventory (bike_name, bike_model, chassis_no, reg_no, client_name) VALUES (?, ?, ?, ?, ?)", 
-                           (self.bike_name.text(), self.bike_model.text(), self.chassis_no.text(), self.reg_no.text() if self.reg_no.text() else "None", self.client_name.text()))
+            cursor.execute("INSERT INTO inventory (bike_name, bike_model, chassis_no, reg_no, purchase_price, purchase_from, purchase_date, client_mobile, client_cnic, product_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Purchased')", 
+                           (self.bike_name.text(), self.bike_model.text(), self.chassis_no.text(), self.reg_no.text(), self.purchase_price.text(), self.purchase_from.text(), current_date, self.client_mobile.text(), self.client_cnic.text()))
+            cursor.execute("INSERT INTO users (client_name, client_cnic, client_mobile, reg_no, product_status, purchase_date, sale_date, payment_method) VALUES (?, ?, ?, ?, 'Purchased', ?, NULL, 'Net Cash')", 
+                           (self.purchase_from.text(), self.client_cnic.text(), self.client_mobile.text(), self.reg_no.text(), current_date))
             conn.commit()
             QMessageBox.information(self, "Success", "Inventory added successfully!")
             self.accept()
-        except sqlite3.IntegrityError:
-            QMessageBox.warning(self, "Error", "Chassis number already exists.")
+        except sqlite3.Error as e:
+            QMessageBox.warning(self, "Database Error", str(e))
         finally:
             conn.close()
-
 
 
         
