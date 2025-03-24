@@ -121,7 +121,7 @@ class UserManagementPage(QMainWindow):
         table = QTableWidget()
         table.setColumnCount(7)
         table.setHorizontalHeaderLabels([
-            "Select", "Client Name", "Client CNIC", "Client Mobile", "Chassis No", "Status", "Purchase Date"
+            "Select", "Client Name", "Client CNIC", "Client Mobile", "Chassis No", "Status", "Date"
         ])
         header = table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -147,7 +147,7 @@ class UserManagementPage(QMainWindow):
         self.connection = sqlite3.connect("pos_database.db")  # Ensure connection is refreshed each time
         cursor = self.connection.cursor()
         query = """
-            SELECT id, client_name, client_cnic, client_mobile, chassis_no, purchase_date FROM users
+            SELECT client_name, client_cnic, client_mobile, chassis_no, purchase_date,purchase_date FROM users
             WHERE client_name LIKE ? OR client_cnic LIKE ? OR client_mobile LIKE ? OR chassis_no LIKE ?
         """
         cursor.execute(query, ('%'+search_term+'%',)*4)

@@ -37,7 +37,9 @@ def initialize_db():
             duration INTEGER,
             advance_payment REAL,
             monthly_installment REAL,
+            remaining_amount REAL,
             profit REAL,
+            purchase_price REAL,
             product_status TEXT DEFAULT 'Sold',
             FOREIGN KEY (chassis_no) REFERENCES inventory(chassis_no)
         )
@@ -51,10 +53,22 @@ def initialize_db():
             client_cnic TEXT,
             client_mobile TEXT,
             chassis_no TEXT,
-            product_status TEXT DEFAULT 'Purchased',
+            product_status TEXT,
             purchase_date TEXT,
             FOREIGN KEY (chassis_no) REFERENCES inventory(chassis_no)
         )''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS usersmanagement (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_name TEXT NOT NULL,
+            client_mobile TEXT NOT NULL,
+            client_cnic TEXT NOT NULL,
+            date TEXT NOT NULL,
+            sales_id INTEGER,
+            inverted_id INTEGER
+        )
+    ''')
 
     conn.commit()
     conn.close()

@@ -5,7 +5,7 @@ from PyQt6.QtGui import QFont, QPixmap
 from PyQt6.QtCore import Qt
 from inventory import InventoryPage
 from sales import SalesPage
-from users import UserManagementPage
+from user_maagement import UserManagement
 
 class HomePage(QMainWindow):
     def __init__(self):
@@ -113,5 +113,5 @@ class HomePage(QMainWindow):
         self.sales_page.show()
 
     def open_user_management_page(self):
-        self.user_management_page = UserManagementPage()
+        self.user_management_page = UserManagement()
         self.user_management_page.show()

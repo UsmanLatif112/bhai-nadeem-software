@@ -30,7 +30,8 @@ class SalesPage(QWidget):
 
         button_bar_layout = self.create_button_bar()
         self.layout.addLayout(button_bar_layout)
-
+        self.load_sales()
+        
     def create_header(self):
         header_widget = QWidget()
         header_widget.setFixedHeight(80)
@@ -123,13 +124,40 @@ class SalesPage(QWidget):
 
         return layout
 
+    # def setup_table(self):
+    #     table = QTableWidget()
+    #     table.setColumnCount(15)  # Including a column for checkboxes and all data fields
+    #     table.setHorizontalHeaderLabels([
+    #         "Select", "Client Name", "Client CNIC", "Client Mobile No", "Chassis No", 
+    #         "Sale Price", "Purchase Price", "Sale Date", "Profit", "Payment Method",
+    #         "Remaining Amount", "Duration", "Advance Payment", "Monthly Installment", "Status"
+    #     ])
+    #     header = table.horizontalHeader()
+    #     header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+    #     table.setStyleSheet("""
+    #         QTableWidget {
+    #             background-color: white;
+    #             gridline-color: #004d00;
+    #             font-size: 14px;
+    #             color: black;
+    #             margin: 10px;
+    #         } 
+    #         QHeaderView::section {
+    #             background-color: #004d00;
+    #             color: white;
+    #             font-weight: bold;
+    #         }
+    #     """)
+    #     table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+    #     table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
+    #     return table
     def setup_table(self):
         table = QTableWidget()
-        table.setColumnCount(14)  # Increase column count by one for the checkbox
+        table.setColumnCount(15)
         table.setHorizontalHeaderLabels([
-            "Select", "Client Name", "Client CNIC", "Client Mobile No", "Bike Chassis No", "Sale Price", 
-            "Purchase Date", "Sale Date", "Payment Method", "Duration", 
-            "Advance Payment", "Monthly Installment", "Profit", "Status"
+            "Select", "Client Name", "Client CNIC", "Client Mobile No", "Chassis No", 
+            "Sale Price", "Purchase Price", "Sale Date", "Profit", "Payment Method",
+            "Remaining Amount", "Duration", "Advance Payment", "Monthly Installment", "Status"
         ])
         header = table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -140,7 +168,7 @@ class SalesPage(QWidget):
                 font-size: 14px;
                 color: black;
                 margin: 10px;
-            }
+            } 
             QHeaderView::section {
                 background-color: #004d00;
                 color: white;
@@ -148,17 +176,41 @@ class SalesPage(QWidget):
             }
         """)
         table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
+        table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)  # Correct value to disable selection
         return table
 
+
+
+
+
+    # def load_sales(self, search_term=""):
+    #     self.connection = sqlite3.connect("pos_database.db")
+    #     cursor = self.connection.cursor()
+    #     query = """
+    #         SELECT client_name, client_cnic, client_mobile, chassis_no, sale_price, 
+    #             purchase_price, sale_date, profit, payment_method, remaining_amount, 
+    #             duration, advance_payment, monthly_installment, product_status 
+    #         FROM sales
+    #         WHERE client_name LIKE ? OR client_cnic LIKE ? OR client_mobile LIKE ? OR chassis_no LIKE ?
+    #     """
+    #     cursor.execute(query, ('%'+search_term+'%',)*4)
+    #     records = cursor.fetchall()
+    #     self.table.setRowCount(len(records))
+    #     for row_idx, row_data in enumerate(records):
+    #         checkbox = QTableWidgetItem()
+    #         checkbox.setCheckState(Qt.CheckState.Unchecked)
+    #         self.table.setItem(row_idx, 0, checkbox)
+    #         for col_idx, col_data in enumerate(row_data):
+    #             self.table.setItem(row_idx, col_idx + 1, QTableWidgetItem(str(col_data)))
+    #     self.connection.close()
 
     def load_sales(self, search_term=""):
         self.connection = sqlite3.connect("pos_database.db")
         cursor = self.connection.cursor()
         query = """
             SELECT client_name, client_cnic, client_mobile, chassis_no, sale_price, 
-                purchase_date, sale_date, payment_method, duration, advance_payment, 
-                monthly_installment, profit, product_status 
+                purchase_price, sale_date, profit, payment_method, remaining_amount, 
+                duration, advance_payment, monthly_installment, product_status 
             FROM sales
             WHERE client_name LIKE ? OR client_cnic LIKE ? OR client_mobile LIKE ? OR chassis_no LIKE ?
         """
@@ -166,42 +218,75 @@ class SalesPage(QWidget):
         records = cursor.fetchall()
         self.table.setRowCount(len(records))
         for row_idx, row_data in enumerate(records):
-            # Add a checkbox in the first column
             checkbox = QTableWidgetItem()
             checkbox.setCheckState(Qt.CheckState.Unchecked)
-            self.table.setItem(row_idx, 0, checkbox)
-            
+            self.table.setItem(row_idx, 0, checkbox)  # Add checkboxes to the first column
+
             for col_idx, col_data in enumerate(row_data):
-                self.table.setItem(row_idx, col_idx + 1, QTableWidgetItem(str(col_data)))  # Adjust column index by +1
+                item = QTableWidgetItem(str(col_data))
+                self.table.setItem(row_idx, col_idx + 1, item)  # Fill other data
         self.connection.close()
 
 
     def delete_selected_sale(self):
-        selected_row = self.table.currentRow()
-        if selected_row != -1:
-            chassis_no = self.table.item(selected_row, 3).text()
-            self.delete_sale(chassis_no)
-
-    def delete_sale(self, chassis_no):
         conn = sqlite3.connect("pos_database.db")
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM sales WHERE chassis_no = ?", (chassis_no,))
-        conn.commit()
-        conn.close()
-        QMessageBox.information(self, "Success", "Sale record deleted successfully!")
-        self.load_sales()
+        try:
+            needs_refresh = False
+            for row in range(self.table.rowCount()):
+                checkbox_item = self.table.item(row, 0)  # Index 0 for checkbox column
+                if checkbox_item.checkState() == Qt.CheckState.Checked:
+                    chassis_no = self.table.item(row, 4).text()  # Assuming chassis_no is in column 4
+                    cursor.execute("DELETE FROM sales WHERE chassis_no = ?", (chassis_no,))
+                    cursor.execute(
+                        "UPDATE inventory SET product_status = 'Purchased' WHERE chassis_no = ?",
+                        (chassis_no,)
+                        )
+                    needs_refresh = True
+
+            if needs_refresh:
+                conn.commit()
+                QMessageBox.information(self, "Success", "Selected sales records deleted successfully!")
+                # Update or insert user data
+                self.load_sales()  # Refresh the table
+            else:
+                QMessageBox.warning(self, "No Selection", "Please select at least one sale to delete.")
+        except sqlite3.Error as e:
+            QMessageBox.critical(self, "Error", f"An error occurred while trying to delete the sale: {str(e)}")
+        finally:
+            conn.close()
+
+    def delete_sale(self, chassis_no):
+        reply = QMessageBox.question(self, 'Confirm Deletion', "Are you sure you want to delete this sale?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            try:
+                conn = sqlite3.connect("pos_database.db")
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM sales WHERE chassis_no = ?", (chassis_no,))
+                conn.commit()
+                QMessageBox.information(self, "Success", "Sale record deleted successfully!")
+                self.load_sales()  # Refresh the table to show that the record has been deleted
+            except sqlite3.Error as e:
+                QMessageBox.critical(self, "Error", f"An error occurred while trying to delete the sale: {str(e)}")
+            finally:
+                conn.close()
+        else:
+            QMessageBox.information(self, "Cancelled", "Sale deletion cancelled.")
+
 
     def open_new_sale_dialog(self):
         dialog = NewSaleDialog(self)
         if dialog.exec():
             self.load_sales()
-
+    
 class NewSaleDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("New Sale")
-        self.setGeometry(300, 300, 400, 600)  # Adjusted for more fields
+        self.setGeometry(300, 300, 400, 600)
         layout = QFormLayout(self)
+        # self.setup_ui()
+        self.connection = sqlite3.connect("pos_database.db")
 
         # Input fields
         self.client_name = QLineEdit()
@@ -213,30 +298,38 @@ class NewSaleDialog(QDialog):
         self.sale_date.setCalendarPopup(True)
         self.sale_date.setDate(QDate.currentDate())
         self.sale_date.setDisplayFormat("dd-MM-yyyy")
-        self.installment_checkbox = QCheckBox("Installment")
-        self.advance_cash = QLineEdit()
-        self.duration = QComboBox()
-        self.duration.addItems([str(i) for i in range(1, 13)])  # 1 to 12 months
-        self.monthly_installment = QLineEdit()
-        self.remaining_amount = QLineEdit()
+        self.purchase_price = QLineEdit()
+        self.purchase_price.setReadOnly(True)  # Purchase price is not editable
         self.profit = QLineEdit()
         self.profit.setReadOnly(True)
+        self.installment_checkbox = QCheckBox("Installment")
+        self.installment_checkbox.setChecked(False)  # Start unchecked
+        self.advance_cash = QLineEdit()
+        self.advance_cash.setEnabled(False)
+        self.duration = QComboBox()
+        self.duration.addItems([str(i) for i in range(1, 13)])  # 1 to 12 months
+        self.duration.setEnabled(False)
+        self.monthly_installment = QLineEdit()
         self.monthly_installment.setReadOnly(True)
+        self.monthly_installment.setEnabled(False)
+        self.remaining_amount = QLineEdit()
         self.remaining_amount.setReadOnly(True)
+        self.remaining_amount.setEnabled(False)
 
         # Adding widgets to the layout
         layout.addRow("Client Name:", self.client_name)
         layout.addRow("Client Mobile Number:", self.client_mobile)
         layout.addRow("Client CNIC:", self.client_cnic)
         layout.addRow("Chassis No:", self.chassis_no)
+        layout.addRow("Purchase Price:", self.purchase_price)
         layout.addRow("Sale Price:", self.sale_price)
+        layout.addRow("Profit:", self.profit)
         layout.addRow("Sale Date:", self.sale_date)
         layout.addRow(self.installment_checkbox)
         layout.addRow("Advance Cash:", self.advance_cash)
         layout.addRow("Duration (Months):", self.duration)
         layout.addRow("Monthly Installment:", self.monthly_installment)
         layout.addRow("Remaining Amount:", self.remaining_amount)
-        layout.addRow("Profit:", self.profit)
 
         self.submit_button = QPushButton("Submit Sale")
         self.submit_button.clicked.connect(self.submit_sale)
@@ -246,26 +339,43 @@ class NewSaleDialog(QDialog):
         self.chassis_no.editingFinished.connect(self.fetch_purchase_price)
         self.sale_price.textChanged.connect(self.calculate_profit)
         self.installment_checkbox.toggled.connect(self.toggle_installment_fields)
-        self.duration.currentIndexChanged.connect(self.calculate_installments)
         self.advance_cash.textChanged.connect(self.calculate_installments)
-
+        self.duration.currentIndexChanged.connect(self.calculate_installments)
     def fetch_purchase_price(self):
-        # Fetch purchase price from inventory based on chassis number
         conn = sqlite3.connect("pos_database.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT purchase_price FROM inventory WHERE chassis_no = ?", (self.chassis_no.text(),))
-        result = cursor.fetchone()
-        if result:
-            self.purchase_price = result[0]
-            self.calculate_profit()
-        else:
-            QMessageBox.warning(self, "Error", "Chassis number not found in inventory.")
-        conn.close()
+
+        try:
+            # Execute the query to get purchase price and product status
+            cursor.execute("SELECT purchase_price, product_status FROM inventory WHERE chassis_no = ?", (self.chassis_no.text(),))
+            result = cursor.fetchone()
+
+            if result:
+                purchase_price, product_status = result  # Unpack results directly
+
+                # Check if the product status is 'Sold'
+                if product_status == 'Sold':
+                    QMessageBox.warning(self, "Error", "This chassis number is already sold.")
+                    self.purchase_price.clear()
+                else:
+                    # Set the purchase price and calculate profit if not sold
+                    self.purchase_price.setText(str(purchase_price))
+                    self.calculate_profit()
+            else:
+                # No record found with the given chassis number
+                QMessageBox.warning(self, "Error", "Chassis number not found in inventory.")
+                self.purchase_price.clear()
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")
+        finally:
+            conn.close()
 
     def calculate_profit(self):
         try:
             sale_price = float(self.sale_price.text())
-            profit = sale_price - self.purchase_price
+            purchase_price = float(self.purchase_price.text())
+            profit = sale_price - purchase_price
             self.profit.setText(str(profit))
         except ValueError:
             self.profit.clear()
@@ -295,9 +405,81 @@ class NewSaleDialog(QDialog):
             self.remaining_amount.clear()
 
     def submit_sale(self):
-        # Implement the logic to submit the sale details to the database
-        QMessageBox.information(self, "Submitted", "Sale details submitted successfully.")
-        self.accept()
+        try:
+            sale_price = float(self.sale_price.text()) if self.sale_price.text() else 0
+            advance_payment = float(self.advance_cash.text()) if self.advance_cash.text() else 0
+            monthly_installment = float(self.monthly_installment.text()) if self.monthly_installment.text() else 0
+            profit = float(self.profit.text()) if self.profit.text() else 0
+        except ValueError:
+            QMessageBox.warning(self, "Invalid Input", "Please ensure all prices are valid numbers.")
+            return
+
+        payment_method = "On Installment" if self.installment_checkbox.isChecked() else "Net Cash"
+        remaining_amount = 0
+        if self.installment_checkbox.isChecked():
+            total_sale_price = sale_price
+            months = int(self.duration.currentText())
+            remaining_amount = total_sale_price - advance_payment
+            if months > 0:
+                monthly_installment = remaining_amount / months
+
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute(
+                "INSERT INTO sales (client_name, client_cnic, client_mobile, chassis_no, sale_price, sale_date, payment_method, duration, purchase_price, advance_payment, monthly_installment, profit, remaining_amount, product_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Sold')",
+                (
+                    self.client_name.text(),
+                    self.client_cnic.text(),
+                    self.client_mobile.text(),
+                    self.chassis_no.text(),
+                    sale_price,
+                    self.sale_date.date().toString("yyyy-MM-dd"),  # Convert PyQt date to string
+                    payment_method,
+                    int(self.duration.currentText()) if self.installment_checkbox.isChecked() else 0,
+                    float(self.purchase_price.text()) if self.purchase_price.text() else 0,  # Ensure correct data type
+                    advance_payment,
+                    monthly_installment,
+                    profit,
+                    remaining_amount,
+                )
+                )
+            sales_id_data = cursor.lastrowid 
+            cursor.execute(
+                "UPDATE inventory SET product_status = 'Sold' WHERE chassis_no = ?",
+                (self.chassis_no.text(),)
+                )
+                # Update or insert user data
+            user_exists = cursor.execute(
+                "SELECT EXISTS(SELECT 1 FROM usersmanagement WHERE client_cnic = ?)",
+                (self.client_cnic.text(),)
+            ).fetchone()[0]
+            if user_exists: 
+                cursor.execute(
+                    "UPDATE usersmanagement SET sales_id = ? WHERE client_cnic = ?",
+                    (sales_id_data, self.client_cnic.text())
+                )
+            else:
+                cursor.execute(
+                    "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date, sales_id) VALUES (?, ?, ?, ?, ?)",
+                    (self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.sale_date.date().toString("yyyy-MM-dd"), sales_id_data)
+                )
+            # if not user_exists:
+            #     cursor.execute(
+            #             "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date,sales_id) VALUES (?, ?, ?, ?, ?)",
+            #             (self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.sale_date.date().toString("yyyy-MM-dd"),sales_id_data)
+            #         )
+                
+            self.connection.commit()
+            QMessageBox.information(self, "Success", "Sale added successfully.")
+        except sqlite3.Error as e:
+            QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")
+        finally:
+            self.connection.close()
+            self.accept()
+            if self.parent():
+                self.parent().load_sales()  # Refresh the sales table
+
+        self.close()
 
 
 if __name__ == "__main__":

@@ -257,8 +257,9 @@ class AddInventoryDialog(QDialog):
         self.client_mobile = QLineEdit()
         self.client_cnic = QLineEdit()
         self.purchase_date = QDateEdit()
-        self.purchase_date.setDisplayFormat("dd-MM-yyyy")
+        self.purchase_date.setCalendarPopup(True)
         self.purchase_date.setDate(QDate.currentDate())
+        self.purchase_date.setDisplayFormat("dd-MM-yyyy")
         self.purchase_price = QLineEdit()  # Field for entering purchase price
 
         layout.addRow("Bike Name:", self.bike_name)
@@ -268,7 +269,7 @@ class AddInventoryDialog(QDialog):
         layout.addRow("Client Name:", self.client_name)
         layout.addRow("Client Mobile:", self.client_mobile)
         layout.addRow("Client CNIC:", self.client_cnic)
-        layout.addRow("Purchase Date (DD-MM-YYYY):", self.purchase_date)
+        layout.addRow("Purchase Date", self.purchase_date)
         layout.addRow("Purchase Price:", self.purchase_price)  # Add purchase price to the form
 
         self.submit_button = QPushButton("Add Inventory")
@@ -291,25 +292,42 @@ class AddInventoryDialog(QDialog):
                 "INSERT INTO inventory (bike_name, bike_model, chassis_no, reg_no, client_name, client_mobile, client_cnic, purchase_date, purchase_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (self.bike_name.text(), self.bike_model.text(), self.chassis_no.text(), self.reg_no.text(), self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.purchase_date.date().toString("dd-MM-yyyy"), purchase_price)
             )
-            
+            sales_id_data = cursor.lastrowid 
             # Check if user already exists in the users table
             user_exists = cursor.execute(
-                "SELECT EXISTS(SELECT 1 FROM users WHERE client_cnic = ?)",
+                "SELECT EXISTS(SELECT 1 FROM usersmanagement WHERE client_cnic = ?)",
                 (self.client_cnic.text(),)
             ).fetchone()[0]
-            
-            if not user_exists:
-                # Insert new user if not exists
+            if user_exists:
                 cursor.execute(
-                    "INSERT INTO users (client_name, client_cnic, client_mobile, chassis_no, purchase_date) VALUES (?, ?, ?, ?, ?)",
-                    (self.client_name.text(), self.client_cnic.text(), self.client_mobile.text(), self.chassis_no.text(), self.purchase_date.date().toString("dd-MM-yyyy"))
+                    "UPDATE usersmanagement SET inverted_id = ? WHERE client_cnic = ?",
+                    (sales_id_data, self.client_cnic.text())
                 )
             else:
-                # Update existing user data
                 cursor.execute(
-                    "UPDATE users SET client_name = ?, client_mobile = ?, chassis_no = ?, purchase_date = ? WHERE client_cnic = ?",
-                    (self.client_name.text(), self.client_mobile.text(), self.chassis_no.text(), self.purchase_date.date().toString("dd-MM-yyyy"), self.client_cnic.text())
+                    "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date, inverted_id) VALUES (?, ?, ?, ?, ?)",
+                    (self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.purchase_date.date().toString("yyyy-MM-dd"), sales_id_data)
                 )
+            # if not user_exists:
+                # Insert new user if not exists
+                # cursor.execute(
+                #     "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date,inverted_id) VALUES (?, ?, ?, ?, ?)",
+                #     (self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.purchase_date.date().toString("yyyy-MM-dd"),sales_id_data)
+                # )
+                # cursor.execute(
+                #     "INSERT INTO users (client_name, client_cnic, client_mobile, chassis_no, purchase_date) VALUES (?, ?, ?, ?, ?)",
+                #     (self.client_name.text(), self.client_cnic.text(), self.client_mobile.text(), self.chassis_no.text(), self.purchase_date.date().toString("dd-MM-yyyy"))
+                # )
+            # else:
+                # Update existing user data
+                # cursor.execute(
+                #     "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date,sales_id) VALUES (?, ?, ?, ?, ?)",
+                #     (self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.sale_date.date().toString("yyyy-MM-dd"),sales_id_data)
+                # )
+                # cursor.execute(
+                #     "UPDATE users SET client_name = ?, client_mobile = ?, purchase_date = ? WHERE client_cnic = ?",
+                #     (self.client_name.text(), self.client_mobile.text(), self.chassis_no.text(), self.purchase_date.date().toString("dd-MM-yyyy"), self.client_cnic.text())
+                # )
             
             conn.commit()
             QMessageBox.information(self, "Success", "Inventory and User updated successfully!")
