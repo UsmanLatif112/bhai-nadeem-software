@@ -38,6 +38,7 @@ def initialize_db():
             advance_payment REAL,
             monthly_installment REAL,
             remaining_amount REAL,
+            add_payment REAL,
             profit REAL,
             purchase_price REAL,
             product_status TEXT DEFAULT 'Sold',
