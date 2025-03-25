@@ -124,33 +124,6 @@ class SalesPage(QWidget):
 
         return layout
 
-    # def setup_table(self):
-    #     table = QTableWidget()
-    #     table.setColumnCount(15)  # Including a column for checkboxes and all data fields
-    #     table.setHorizontalHeaderLabels([
-    #         "Select", "Client Name", "Client CNIC", "Client Mobile No", "Chassis No", 
-    #         "Sale Price", "Purchase Price", "Sale Date", "Profit", "Payment Method",
-    #         "Remaining Amount", "Duration", "Advance Payment", "Monthly Installment", "Status"
-    #     ])
-    #     header = table.horizontalHeader()
-    #     header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-    #     table.setStyleSheet("""
-    #         QTableWidget {
-    #             background-color: white;
-    #             gridline-color: #004d00;
-    #             font-size: 14px;
-    #             color: black;
-    #             margin: 10px;
-    #         } 
-    #         QHeaderView::section {
-    #             background-color: #004d00;
-    #             color: white;
-    #             font-weight: bold;
-    #         }
-    #     """)
-    #     table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-    #     table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
-    #     return table
     def setup_table(self):
         table = QTableWidget()
         table.setColumnCount(15)
@@ -178,31 +151,6 @@ class SalesPage(QWidget):
         table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)  # Correct value to disable selection
         return table
-
-
-
-
-
-    # def load_sales(self, search_term=""):
-    #     self.connection = sqlite3.connect("pos_database.db")
-    #     cursor = self.connection.cursor()
-    #     query = """
-    #         SELECT client_name, client_cnic, client_mobile, chassis_no, sale_price, 
-    #             purchase_price, sale_date, profit, payment_method, remaining_amount, 
-    #             duration, advance_payment, monthly_installment, product_status 
-    #         FROM sales
-    #         WHERE client_name LIKE ? OR client_cnic LIKE ? OR client_mobile LIKE ? OR chassis_no LIKE ?
-    #     """
-    #     cursor.execute(query, ('%'+search_term+'%',)*4)
-    #     records = cursor.fetchall()
-    #     self.table.setRowCount(len(records))
-    #     for row_idx, row_data in enumerate(records):
-    #         checkbox = QTableWidgetItem()
-    #         checkbox.setCheckState(Qt.CheckState.Unchecked)
-    #         self.table.setItem(row_idx, 0, checkbox)
-    #         for col_idx, col_data in enumerate(row_data):
-    #             self.table.setItem(row_idx, col_idx + 1, QTableWidgetItem(str(col_data)))
-    #     self.connection.close()
 
     def load_sales(self, search_term=""):
         self.connection = sqlite3.connect("pos_database.db")
@@ -393,16 +341,17 @@ class NewSaleDialog(QDialog):
 
     def calculate_installments(self):
         try:
-            total_sale_price = float(self.sale_price.text())
-            advance_payment = float(self.advance_cash.text() if self.advance_cash.text() else 0)
+            total_sale_price = int(self.sale_price.text())  # Convert to integer
+            advance_payment = int(self.advance_cash.text() if self.advance_cash.text() else 0)  # Convert to integer
             months = int(self.duration.currentText())
             remaining = total_sale_price - advance_payment
-            monthly = remaining / months if months else 0
-            self.monthly_installment.setText(f"{monthly:.2f}")
-            self.remaining_amount.setText(f"{remaining:.2f}")
+            monthly = int(remaining / months) if months else 0  # Calculate as integer
+            self.monthly_installment.setText(f"{monthly}")
+            self.remaining_amount.setText(f"{remaining}")
         except ValueError:
             self.monthly_installment.clear()
             self.remaining_amount.clear()
+
 
     def submit_sale(self):
         try:
