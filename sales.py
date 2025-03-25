@@ -44,7 +44,7 @@ class SalesPage(QWidget):
         logo_label.setPixmap(logo_pixmap.scaledToHeight(60, Qt.TransformationMode.SmoothTransformation))
         header_layout.addWidget(logo_label, 0, Qt.AlignmentFlag.AlignVCenter)
 
-        header_text = QLabel("Sales Management")
+        header_text = QLabel("BISMILLAH MOTORS")
         header_text.setStyleSheet("color: white;")
         header_text.setFont(QFont("Arial", 24, QFont.Weight.Bold))
         header_layout.addStretch(1)

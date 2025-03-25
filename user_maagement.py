@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QPixmap, QFont
 from PyQt6.QtCore import Qt
-from users import UserManagementPage
+# from users import UserManagementPage
 # from sales import SalesPage
 from user_data import UserPage
 class UserManagement(QMainWindow):

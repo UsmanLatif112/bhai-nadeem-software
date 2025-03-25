@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import (QMessageBox,
     QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QMessageBox,
     QHBoxLayout, QLabel, QLineEdit, QHeaderView, QApplication, QDialog, QFormLayout,QDateEdit, QCheckBox, QComboBox
 )
+from PyQt6.QtWidgets import QDialog, QFormLayout, QLineEdit, QComboBox, QPushButton
 from PyQt6.QtGui import QPixmap, QFont,QImage
 from PyQt6.QtCore import Qt, QDate
 from PyQt6.QtGui import QPixmap, QFont,QTextDocument,QPainter
@@ -46,7 +47,7 @@ class UserPage(QWidget):
         logo_pixmap = QPixmap("BM_moters.png")
         logo_label.setPixmap(logo_pixmap.scaledToHeight(60, Qt.TransformationMode.SmoothTransformation))
         header_layout.addWidget(logo_label, 0, Qt.AlignmentFlag.AlignVCenter)
-        header_text = QLabel("Users Management")
+        header_text = QLabel("BISMILLAH MOTORS")
         header_text.setStyleSheet("color: white;")
         header_text.setFont(QFont("Arial", 24, QFont.Weight.Bold))
         header_layout.addStretch(1)
@@ -252,7 +253,6 @@ class UserPage(QWidget):
         # Set up the printer
         printer = QPrinter()
         printer.setResolution(900)  # Set high resolution (e.g., 900 DPI)
-        
         print_dialog = QPrintDialog(printer, self)
 
         if print_dialog.exec() == QPrintDialog.DialogCode.Accepted:
@@ -275,8 +275,23 @@ class UserPage(QWidget):
             y_offset += line_height
             painter.drawText(100, y_offset, "-" * 50)  # Separator line
             y_offset += line_height
-            # Print each selected row
             for row in selected_rows:
+                self.connection = sqlite3.connect("pos_database.db")
+                cursor = self.connection.cursor()
+
+                # Fetching bike information
+                chassis_no = row['Chassis No']
+                cursor.execute("SELECT bike_name, bike_model FROM inventory WHERE chassis_no = ?", (chassis_no,))
+                bike_data = cursor.fetchone()
+                bike_name = bike_data[0] if bike_data else "Unknown"
+                bike_model = bike_data[1] if bike_data else "Unknown"
+
+                # Fetching additional payment information
+                cursor.execute("SELECT add_payment FROM sales WHERE chassis_no = ?", (chassis_no,))
+                add_payment_data = cursor.fetchone()
+                add_payment = add_payment_data[0] if add_payment_data else "Unknown"
+
+                # Continue with painting process
                 painter.drawText(100, y_offset, f"User Name:  {row['Client Name']}")
                 y_offset += line_height
                 painter.drawText(100, y_offset, f"Mobile No:  {row['Mobile No']}")
@@ -285,11 +300,11 @@ class UserPage(QWidget):
                 y_offset += line_height
                 painter.drawText(100, y_offset, "-" * 50)  # Separator line
                 y_offset += line_height
-                painter.drawText(100, y_offset, f"Bike Name:  ssss")
+                painter.drawText(100, y_offset, f"Bike Name:  {bike_name}")
                 y_offset += line_height
-                painter.drawText(100, y_offset, f"Bike Model:  ssss")
+                painter.drawText(100, y_offset, f"Bike Model:  {bike_model}")
                 y_offset += line_height
-                painter.drawText(100, y_offset, f"Chassis No:  {row['Chassis No']}")
+                painter.drawText(100, y_offset, f"Chassis No:  {chassis_no}")
                 y_offset += line_height
                 painter.drawText(100, y_offset, "-" * 50)  # Separator line
                 y_offset += line_height
@@ -301,17 +316,20 @@ class UserPage(QWidget):
                 y_offset += line_height
                 painter.drawText(100, y_offset, f"Duration: {row['Duration']}")
                 y_offset += line_height
-                painter.drawText(100, y_offset, f"Add Payment: 100")
+                painter.drawText(100, y_offset, f"Add Payment: {add_payment}")
                 y_offset += line_height
                 painter.drawText(100, y_offset, "-" * 50)  # Separator line
                 y_offset += line_height
                 font.setBold(True)
                 painter.setFont(font)
-                painter.drawText(100, y_offset, f"Shop# 46 Jinnah Market, Multan Road, Rasool Pura Mailsi, Punjab Pakistan.")
+                painter.drawText(100, y_offset, "Shop# 46 Jinnah Market, Multan Road, Rasool Pura Mailsi, Punjab Pakistan.")
                 y_offset += line_height
-                painter.drawText(100, y_offset, f"Ch Nadeem 03007582812, Ch Raheel 03007777221")
+                painter.drawText(100, y_offset, "Ch Nadeem 03007582812, Ch Raheel 03007777221")
                 y_offset += line_height
+
             painter.end()  # End the painting process
+            self.connection.close()  # Close the database connection
+
 
     
     def delete_sale(self, chassis_no):
@@ -336,70 +354,80 @@ class UserPage(QWidget):
         remaining_amount = result[3]
         dialog = NewSaleDialog(chassis_no, monthly_installment, duration, remaining_amount, parent=self)
         dialog.exec()
+
+
 class NewSaleDialog(QDialog):
     def __init__(self, chassis_no, monthly_installment, duration, remaining_amount, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Update Payments")
         self.setGeometry(300, 300, 400, 200)
         layout = QFormLayout(self)
-        # Create input fields
+
+        # Initialize input fields
         self.chassis_no = QLineEdit()
         self.chassis_no.setText(chassis_no)
         self.chassis_no.setReadOnly(True)
 
         self.duration = QComboBox()
         self.duration.addItems([str(i) for i in range(1, 13)])  # 1 to 12 months
-        # Assuming duration, monthly_installment, and remaining_amount are already defined as floats
         self.duration.setCurrentText(str(duration))
+
         self.monthly_installment = QLineEdit()
         self.monthly_installment.setText(str(int(monthly_installment)))  # Convert to integer
         self.monthly_installment.setReadOnly(True)
+
         self.remaining_amount = QLineEdit()
         self.remaining_amount.setText(str(int(remaining_amount)))  # Convert to integer
-        self.remaining_amount.setReadOnly(True)
 
         self.payment_no = QLineEdit()
 
-        # Add the widgets to the layout
+        # Setup layout
         layout.addRow("Chassis No:", self.chassis_no)
         layout.addRow("Duration (Months):", self.duration)
         layout.addRow("Monthly Installment:", self.monthly_installment)
         layout.addRow("Remaining Amount:", self.remaining_amount)
         layout.addRow("Add Payment:", self.payment_no)
-        self.original_monthly_installment_previous = monthly_installment
-        self.original_remaining_amount_previous = remaining_amount
+
+        # Save previous state for reset purposes
+        self.remaining_amount_previous = int(remaining_amount)
+        self.monthly_installment_previous = str(monthly_installment)  # Save the initial monthly installment
+
+        # Connect changes in the payment field to the calculation method
         self.payment_no.textChanged.connect(self.calculate_installments)
+
         self.submit_button = QPushButton("Update Payment")
         self.submit_button.clicked.connect(self.submit_sale)
         layout.addWidget(self.submit_button)
+
     def calculate_installments(self):
+        """Calculate the new remaining amount and update the monthly installment."""
         try:
-            add_payment = int(self.payment_no.text() if self.payment_no.text() else 0)  # Added payment
-            months = int(self.duration.currentText())  # Get selected duration value
-            remaining = float(self.remaining_amount.text() if self.remaining_amount.text() else 0)  # Get remaining amount
-            # import pdb;pdb.set_trace()
+            payment_text = self.payment_no.text()
+            payment_amount = int(payment_text) if payment_text.strip() else 0
+            new_remaining_amount = self.remaining_amount_previous - payment_amount
+            if new_remaining_amount < 0:
+                new_remaining_amount = 0  # Prevent negative remaining amounts
+            self.remaining_amount.setText(str(new_remaining_amount))
+            
+            # Recalculate the monthly installment using integer division
+            duration = int(self.duration.currentText())
+            new_monthly_installment = new_remaining_amount // duration if duration > 0 else new_remaining_amount
+            
+            self.monthly_installment.setText(str(new_monthly_installment))
+        except ValueError:
+            # Reset to previous values if input is invalid
+            self.remaining_amount.setText(str(self.remaining_amount_previous))
+            self.monthly_installment.setText(self.monthly_installment_previous)
 
-            if add_payment:  # Proceed only if there's an added payment
-                # Subtract added payment from remaining amount
-                updated_remaining = int(remaining - add_payment)
-                
-                # Ensure updated_remaining is not negative
-                if updated_remaining < 0:
-                    updated_remaining = 0
-                
-                # Calculate the new monthly installment based on the updated remaining amount
-                monthly = updated_remaining / months if months > 0 else 0
-                
-                # Update the UI with the new values
-                self.monthly_installment.setText(f"{monthly:.2f}")
-                self.remaining_amount.setText(f"{updated_remaining:.2f}")
-            else:
-                # If no additional payment, reset to original values
-                self.remaining_amount.setText(f"{self.original_remaining_amount_previous:.2f}")
-                self.monthly_installment.setText(f"{self.original_monthly_installment_previous:.2f}")
 
-        except Exception as e:
-            print(f"An error occurred: {e}")  # Handle exception
+    def submit_sale(self):
+        # Implement the logic to handle sale submission
+        print("Sale submitted with the following details:")
+        print(f"Chassis No: {self.chassis_no.text()}")
+        print(f"Duration: {self.duration.currentText()}")
+        print(f"Monthly Installment: {self.monthly_installment.text()}")
+        print(f"Remaining Amount: {self.remaining_amount.text()}")
+        self.accept()  # Close the dialog (consider using self.close() if not modal)
 
     def submit_sale(self):
         # Get the current values from the dialog
