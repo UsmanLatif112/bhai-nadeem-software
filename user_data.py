@@ -11,7 +11,18 @@ from PyQt6.QtPrintSupport import QPrinter, QPrintDialog
 from PyQt6.QtPrintSupport import QPrinter, QPrintDialog
 from PyQt6.QtGui import QPainter
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QMessageBox  
+from PyQt6.QtWidgets import QMessageBox 
+import os,sys
+def resource_path(relative_path):
+        """ Get absolute path to resource, works for dev and frozen """
+        try:
+            # PyInstaller creates a temp folder and stores path in _MEIPASS
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+
+        return os.path.join(base_path, relative_path)
+     
 class UserPage(QWidget):
     def __init__(self,user_id,invertr_id):
         super().__init__()
@@ -43,10 +54,19 @@ class UserPage(QWidget):
         header_widget.setStyleSheet("background-color: #004d00;")
         header_layout = QHBoxLayout(header_widget)
         header_layout.setContentsMargins(10, 10, 10, 10)
+        
+        # Logo
         logo_label = QLabel()
-        logo_pixmap = QPixmap("BM_moters.png")
-        logo_label.setPixmap(logo_pixmap.scaledToHeight(60, Qt.TransformationMode.SmoothTransformation))
+        logo_pixmap_path = resource_path('BM_moters.png')  # Use resource_path here
+        logo_pixmap = QPixmap(logo_pixmap_path)
+        if logo_pixmap.isNull():
+            logo_pixmap = QPixmap(100, 60)
+            logo_pixmap.fill(Qt.GlobalColor.gray)
+
+        scaled_logo = logo_pixmap.scaledToHeight(60, Qt.TransformationMode.SmoothTransformation)
+        logo_label.setPixmap(scaled_logo)
         header_layout.addWidget(logo_label, 0, Qt.AlignmentFlag.AlignVCenter)
+        
         header_text = QLabel("BISMILLAH MOTORS")
         header_text.setStyleSheet("color: white;")
         header_text.setFont(QFont("Arial", 24, QFont.Weight.Bold))

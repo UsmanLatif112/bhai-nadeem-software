@@ -12,3 +12,8 @@ if __name__ == "__main__":
     main_window = HomePage()
     main_window.show()
     sys.exit(app.exec())
+
+
+
+
+# pyinstaller --onefile --windowed --icon=App_icon.ico --add-data "BM_moters.png;." main.py

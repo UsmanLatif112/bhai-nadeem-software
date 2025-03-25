@@ -9,6 +9,17 @@ from PyQt6.QtCore import Qt
 # from users import UserManagementPage
 # from sales import SalesPage
 from user_data import UserPage
+import os,sys
+def resource_path(relative_path):
+        """ Get absolute path to resource, works for dev and frozen """
+        try:
+            # PyInstaller creates a temp folder and stores path in _MEIPASS
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+
+        return os.path.join(base_path, relative_path)
+    
 class UserManagement(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -69,10 +80,16 @@ class UserManagement(QMainWindow):
         header_layout.setContentsMargins(10, 10, 10, 10)
         header_layout.setSpacing(10)
 
-        # Logo on the left
+        # Logo
         logo_label = QLabel()
-        logo_pixmap = QPixmap("BM_moters.png")
-        logo_label.setPixmap(logo_pixmap.scaledToHeight(60, Qt.TransformationMode.SmoothTransformation))
+        logo_pixmap_path = resource_path('BM_moters.png')  # Use resource_path here
+        logo_pixmap = QPixmap(logo_pixmap_path)
+        if logo_pixmap.isNull():
+            logo_pixmap = QPixmap(100, 60)
+            logo_pixmap.fill(Qt.GlobalColor.gray)
+
+        scaled_logo = logo_pixmap.scaledToHeight(60, Qt.TransformationMode.SmoothTransformation)
+        logo_label.setPixmap(scaled_logo)
         header_layout.addWidget(logo_label, 0, Qt.AlignmentFlag.AlignVCenter)
 
         # Title in the center

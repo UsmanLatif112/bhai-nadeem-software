@@ -6,14 +6,35 @@ from PyQt6.QtCore import Qt
 from inventory import InventoryPage
 from sales import SalesPage
 from user_maagement import UserManagement
+import sys
+import os
 
+
+def resource_path(relative_path):
+        """ Get absolute path to resource, works for dev and frozen """
+        try:
+            # PyInstaller creates a temp folder and stores path in _MEIPASS
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+
+        return os.path.join(base_path, relative_path)
+    
+    
 class HomePage(QMainWindow):
+    # def __init__(self):
+    #     super().__init__()
+    #     self.setWindowTitle("Bismillah Motors - Home")
+    #     self.setGeometry(100, 100, 800, 600)  # Starting window size
+        
+    #     self.initUI()
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Bismillah Motors - Home")
         self.setGeometry(100, 100, 800, 600)  # Starting window size
         
         self.initUI()
+
 
     def initUI(self):
         central_widget = QWidget(self)
@@ -42,10 +63,10 @@ class HomePage(QMainWindow):
         header_layout = QHBoxLayout(header_widget)
         header_layout.setContentsMargins(10, 10, 10, 10)
         header_layout.setSpacing(10)
-
         # Logo
         logo_label = QLabel()
-        logo_pixmap = QPixmap("BM_moters.png")
+        logo_pixmap_path = resource_path('BM_moters.png')  # Use resource_path here
+        logo_pixmap = QPixmap(logo_pixmap_path)
         if logo_pixmap.isNull():
             logo_pixmap = QPixmap(100, 60)
             logo_pixmap.fill(Qt.GlobalColor.gray)
@@ -115,3 +136,5 @@ class HomePage(QMainWindow):
     def open_user_management_page(self):
         self.user_management_page = UserManagement()
         self.user_management_page.show()
+
+    
