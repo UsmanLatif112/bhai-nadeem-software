@@ -8,14 +8,13 @@ from PyQt6.QtCore import Qt, QDate
 from PyQt6.QtGui import QPixmap, QFont
 import os,sys
 def resource_path(relative_path):
-        """ Get absolute path to resource, works for dev and frozen """
-        try:
-            # PyInstaller creates a temp folder and stores path in _MEIPASS
-            base_path = sys._MEIPASS
-        except Exception:
-            base_path = os.path.abspath(".")
-
-        return os.path.join(base_path, relative_path)
+    """ Get absolute path to resource, works for dev and frozen """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
     
 class SalesPage(QWidget):
     def __init__(self):

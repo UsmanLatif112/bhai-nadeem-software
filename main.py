@@ -16,4 +16,8 @@ if __name__ == "__main__":
 
 
 
-# pyinstaller --onefile --windowed --icon=App_icon.ico --add-data "BM_moters.png;." main.py
+# pyinstaller --onefile --windowed --icon=Icon.ico --add-data "BM_moters.png;." main.py
+# pyinstaller --onefile --windowed --icon=Icon.ico --add-data "BM_moters_b.png;." --name "Bismillah Motors" main.py
+# pyinstaller --onefile --windowed --icon=Icon.ico --add-data "BM_moters_b.png;." --add-data "BM_moters.png;." --name "Bismillah Motors" main.py
+
+

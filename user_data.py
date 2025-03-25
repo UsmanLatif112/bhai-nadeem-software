@@ -14,14 +14,13 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QMessageBox 
 import os,sys
 def resource_path(relative_path):
-        """ Get absolute path to resource, works for dev and frozen """
-        try:
-            # PyInstaller creates a temp folder and stores path in _MEIPASS
-            base_path = sys._MEIPASS
-        except Exception:
-            base_path = os.path.abspath(".")
-
-        return os.path.join(base_path, relative_path)
+    """ Get absolute path to resource, works for dev and frozen """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
      
 class UserPage(QWidget):
     def __init__(self,user_id,invertr_id):
@@ -57,12 +56,14 @@ class UserPage(QWidget):
         
         # Logo
         logo_label = QLabel()
-        logo_pixmap_path = resource_path('BM_moters.png')  # Use resource_path here
+        logo_pixmap_path = resource_path('BM_moters.png')
         logo_pixmap = QPixmap(logo_pixmap_path)
+        
         if logo_pixmap.isNull():
-            logo_pixmap = QPixmap(100, 60)
+            print("Failed to load logo in header:", logo_pixmap_path)  # Debug output
+            logo_pixmap = QPixmap(100, 60)  # Fallback size
             logo_pixmap.fill(Qt.GlobalColor.gray)
-
+        
         scaled_logo = logo_pixmap.scaledToHeight(60, Qt.TransformationMode.SmoothTransformation)
         logo_label.setPixmap(scaled_logo)
         header_layout.addWidget(logo_label, 0, Qt.AlignmentFlag.AlignVCenter)
@@ -157,6 +158,7 @@ class UserPage(QWidget):
     def load_sales(self,search_term=""):
         """ Fetch product details from the sales table based on user_id and display them in the frontend table. """
         self.connection = sqlite3.connect("pos_database.db")
+
         cursor = self.connection.cursor()
         if self.user_id:
             cursor.execute("SELECT client_cnic FROM sales WHERE id = ?", (self.user_id,))
@@ -270,27 +272,30 @@ class UserPage(QWidget):
             QMessageBox.warning(self, "No Selection", "Please select at least one sale to print.")
 
     def show_print_preview(self, selected_rows):
-        # Set up the printer
         printer = QPrinter()
-        printer.setResolution(900)  # Set high resolution (e.g., 900 DPI)
+        printer.setResolution(900)
         print_dialog = QPrintDialog(printer, self)
-
+        
         if print_dialog.exec() == QPrintDialog.DialogCode.Accepted:
             painter = QPainter(printer)
             font = QFont()
-            font.setPointSize(10) 
+            font.setPointSize(10)
             painter.setFont(font)
-            y_offset = 40 
-            line_height = 40  
-            logo_image = QImage("BM_moters_b.png")
+            y_offset = 40
+            line_height = 40
+            
+            # Load the image specifically for this function
+            logo_image_path = resource_path('BM_moters_b.png')
+            logo_image = QImage(logo_image_path)
             if logo_image.isNull():
-                print("Failed to load image.")
+                print("Failed to load image for printing:", logo_image_path)  # Debug output
                 return
+            
             logo_width = 500
             logo_height = 50
-            # Draw the image with the correct aspect ratio mode
-            painter.drawImage(100, y_offset, logo_image.scaled(logo_width, logo_height))
-            y_offset += logo_height + 10 
+            # Draw the image
+            painter.drawImage(100, y_offset, logo_image.scaled(logo_width, logo_height, Qt.AspectRatioMode.KeepAspectRatio))
+            y_offset += logo_height + 10
 
             y_offset += line_height
             painter.drawText(100, y_offset, "-" * 50)  # Separator line

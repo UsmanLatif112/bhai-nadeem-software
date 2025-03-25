@@ -10,14 +10,13 @@ from PyQt6.QtWidgets import QDateEdit
 from PyQt6.QtCore import QDate
 import os,sys
 def resource_path(relative_path):
-        """ Get absolute path to resource, works for dev and frozen """
-        try:
-            # PyInstaller creates a temp folder and stores path in _MEIPASS
-            base_path = sys._MEIPASS
-        except Exception:
-            base_path = os.path.abspath(".")
-
-        return os.path.join(base_path, relative_path)
+    """ Get absolute path to resource, works for dev and frozen """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
     
 class InventoryPage(QMainWindow):
     def __init__(self):
