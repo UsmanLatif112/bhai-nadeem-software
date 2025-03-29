@@ -3,9 +3,33 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QMessageBox,
     QHBoxLayout, QLabel, QLineEdit, QHeaderView, QApplication, QDialog, QFormLayout,QDateEdit, QCheckBox, QComboBox
 )
-from PyQt6.QtGui import QPixmap, QFont
+from PyQt6.QtGui import QPixmap, QFont, QTextOption
 from PyQt6.QtCore import Qt, QDate
 from PyQt6.QtGui import QPixmap, QFont
+
+from PyQt6.QtWidgets import QStyledItemDelegate
+from PyQt6.QtCore import QSize
+
+
+from PyQt6.QtWidgets import QStyledItemDelegate
+from PyQt6.QtCore import Qt, QSize, QRectF
+from PyQt6.QtGui import QTextOption
+
+class HeaderDelegate(QStyledItemDelegate):
+    def paint(self, painter, option, index):
+        painter.save()
+        
+        # Set up text option for word wrapping
+        text_option = QTextOption()
+        text_option.setWrapMode(QTextOption.WrapMode.WordWrap)
+        
+        # Draw the header item with wrapped text
+        painter.drawText(QRectF(option.rect), index.data(), text_option)
+        painter.restore()
+
+    def sizeHint(self, option, index):
+        return QSize(100, 40)  # Customize size for headers
+
 
 class SalesPage(QWidget):
     def __init__(self):
@@ -123,17 +147,39 @@ class SalesPage(QWidget):
         layout.setContentsMargins(0, 0, 20, 20)
 
         return layout
-
+    
     # def setup_table(self):
     #     table = QTableWidget()
-    #     table.setColumnCount(15)  # Including a column for checkboxes and all data fields
+    #     table.setColumnCount(15)
     #     table.setHorizontalHeaderLabels([
-    #         "Select", "Client Name", "Client CNIC", "Client Mobile No", "Chassis No", 
-    #         "Sale Price", "Purchase Price", "Sale Date", "Profit", "Payment Method",
-    #         "Remaining Amount", "Duration", "Advance Payment", "Monthly Installment", "Status"
+    #         "Select", "Client\nName", "Client\nCNIC", "Client Mobile\nNo", "Chassis No", 
+    #         "Sale\nPrice", "Purchase\nPrice", "Sale\nDate", "Profit", "Payment\nMethod",
+    #         "Remaining\nAmount", "Duration", "Advance\nPayment", "Monthly\nInstallment", "Status"
     #     ])
+        
+    #     # Set tooltips for headers
+    #     header_labels = [
+    #         "Select", "Client\nName", "Client\nCNIC", "Client Mobile\nNo", "Chassis No", 
+    #         "Sale\nPrice", "Purchase\nPrice", "Sale\nDate", "Profit", "Payment\nMethod",
+    #         "Remaining\nAmount", "Duration", "Advance\nPayment", "Monthly\nInstallment", "Status"
+    #     ]
+        
+    #     for i, label in enumerate(header_labels):
+    #         item = table.horizontalHeaderItem(i)
+    #         if item is not None:
+    #             item.setToolTip(label)
+
     #     header = table.horizontalHeader()
-    #     header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+    #     header.setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+
+    #     # Set specific widths for columns to avoid bottom scrollbar
+    #     column_widths = [50, 120, 100, 100, 100, 100, 100, 100, 100, 120, 120, 80, 120, 120, 100]
+    #     for i, width in enumerate(column_widths):
+    #         header.resizeSection(i, width)
+
+    #     # Set the item delegate for the header
+    #     table.setItemDelegateForColumn(0, HeaderDelegate())
+
     #     table.setStyleSheet("""
     #         QTableWidget {
     #             background-color: white;
@@ -146,21 +192,43 @@ class SalesPage(QWidget):
     #             background-color: #004d00;
     #             color: white;
     #             font-weight: bold;
+    #             padding: 5px;  /* Padding for better visual appearance */
     #         }
     #     """)
+        
     #     table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
     #     table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
+        
     #     return table
+
     def setup_table(self):
         table = QTableWidget()
         table.setColumnCount(15)
-        table.setHorizontalHeaderLabels([
-            "Select", "Client Name", "Client CNIC", "Client Mobile No", "Chassis No", 
+        
+        headers = [
+            "Select", "Client\nName", "Client\nCNIC", "Client\nMobileNo", "Chassis\nNo", 
+            "Sale\nPrice", "Purchase\nPrice", "Sale\nDate", "Profit", "Payment\nMethod",
+            "Remaining\nAmount", "Duration", "Advance\nPayment", "Monthly\nInstallment", "Status"
+        ]
+        
+        tooltips = [
+            "Select", "Client Name", "Client CNIC", "Client MobileNo", "Chassis No", 
             "Sale Price", "Purchase Price", "Sale Date", "Profit", "Payment Method",
             "Remaining Amount", "Duration", "Advance Payment", "Monthly Installment", "Status"
-        ])
+        ]
+
+        # Set horizontal header labels
+        table.setHorizontalHeaderLabels(headers)
+
+        # Set tooltips for each header item
+        for i in range(len(headers)):
+            item = QTableWidgetItem(headers[i])
+            item.setToolTip(tooltips[i])  # Setting tooltip on the header item
+            table.setHorizontalHeaderItem(i, item)
+
         header = table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
         table.setStyleSheet("""
             QTableWidget {
                 background-color: white;
@@ -175,10 +243,11 @@ class SalesPage(QWidget):
                 font-weight: bold;
             }
         """)
+
         table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)  # Correct value to disable selection
+        
         return table
-
 
 
 
@@ -211,8 +280,8 @@ class SalesPage(QWidget):
             SELECT client_name, client_cnic, client_mobile, chassis_no, sale_price, 
                 purchase_price, sale_date, profit, payment_method, remaining_amount, 
                 duration, advance_payment, monthly_installment, product_status 
-            FROM sales
-            WHERE client_name LIKE ? OR client_cnic LIKE ? OR client_mobile LIKE ? OR chassis_no LIKE ?
+            FROM sales 
+            WHERE client_name LIKE ? OR client_cnic LIKE ? OR client_mobile LIKE ? OR chassis_no LIKE ? ORDER BY id DESC
         """
         cursor.execute(query, ('%'+search_term+'%',)*4)
         records = cursor.fetchall()

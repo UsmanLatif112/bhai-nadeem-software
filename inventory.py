@@ -111,18 +111,32 @@ class InventoryPage(QMainWindow):
         """)
         button.setFixedSize(200, 30)  # Match dimensions with the search bar
         return button
-    
-    
-    
     def setup_table(self):
         table = QTableWidget()
-        table.setColumnCount(10)  
-        table.setHorizontalHeaderLabels([
-            "Select", "ID", "Bike Name", "Bike Model", "Chassis No", "Reg No", "Client Name",
-            "Purchase Price","Purchase Date", "Status"
-        ])
+        table.setColumnCount(10)
+        headers = [
+            "Select", "ID", "Bike Name", "Bike Model", "Chassis No",
+            "Reg No", "Client Name", "Purchase Price", "Purchase Date", "Status"
+        ]
+        
+        tooltips = [
+            "Select", "ID", "Bike Name", "Bike ", "Chassis No",
+            "Reg No", "Client Name", "Purchase Price", "Purchase Date", "Status"
+        ]
+
+        # Set the horizontal header labels
+        table.setHorizontalHeaderLabels(headers)
+
+        # Set tooltips for each header item
+        for i in range(len(headers)):
+            item = QTableWidgetItem(headers[i])
+            item.setToolTip(tooltips[i])  # Set tooltip for the column header
+            table.setHorizontalHeaderItem(i, item)
+
+        # Get the horizontal header
         header = table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
         table.setStyleSheet("""
             QTableWidget {
                 background-color: white;
@@ -142,9 +156,7 @@ class InventoryPage(QMainWindow):
         table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)  # Correct way to disable selection
 
         return table
-
-
-    
+        
     def create_search_bar(self):
         layout = QHBoxLayout()
         layout.addStretch(1)  # Pushes the search bar to the right
@@ -190,7 +202,7 @@ class InventoryPage(QMainWindow):
                     cursor.execute(query, (search_term,) * 7)
                 else:
                     query = """
-                        SELECT id, bike_name, bike_model, chassis_no, reg_no, client_name,purchase_price, purchase_date, product_status, purchase_price FROM inventory
+                        SELECT id, bike_name, bike_model, chassis_no, reg_no, client_name,purchase_price, purchase_date, product_status, purchase_price FROM inventory ORDER BY id DESC
                     """
                     cursor.execute(query)
 

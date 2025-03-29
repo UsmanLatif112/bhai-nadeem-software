@@ -135,9 +135,19 @@ class UserManagement(QMainWindow):
         """
         table = QTableWidget()
         table.setColumnCount(6)
-        table.setHorizontalHeaderLabels([
-            "Select", "Client Name", "Client Mobile", "Client CNIC", "Date", "Manage"
-        ])
+
+        headers = ["Select", "Client Name", "Client Mobile", "Client CNIC", "Date", "Manage"]
+        tooltips = [
+           "Select", "Client Name", "Client Mobile", "Client CNIC", "Date", "Manage"
+        ]
+
+        # Set horizontal header labels and tooltips
+        table.setHorizontalHeaderLabels(headers)
+
+        for i in range(len(headers)):
+            item = QTableWidgetItem(headers[i])
+            item.setToolTip(tooltips[i])  # Set tooltip for each header item
+            table.setHorizontalHeaderItem(i, item)
 
         header = table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -156,8 +166,10 @@ class UserManagement(QMainWindow):
                 font-weight: bold;
             }
         """)
+        
         table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
+
         return table
 
     def load_users(self, search_term=""):
@@ -169,7 +181,7 @@ class UserManagement(QMainWindow):
         query = """
             SELECT id,sales_id,inverted_id, client_name, client_mobile, client_cnic, date
             FROM usersmanagement
-            WHERE client_name LIKE ? OR client_mobile LIKE ? OR client_cnic LIKE ?
+            WHERE client_name LIKE ? OR client_mobile LIKE ? OR client_cnic LIKE ? ORDER BY id DESC
         """
         like_input = f"%{search_term}%"
         cursor.execute(query, (like_input, like_input, like_input))

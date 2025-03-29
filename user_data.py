@@ -108,12 +108,55 @@ class UserPage(QWidget):
     def setup_table(self):
         table = QTableWidget()
         table.setColumnCount(15)  # Increase column count by one for the checkbox
-        table.setHorizontalHeaderLabels([
-            "Select", "Client Name", "Client Mobile No", "Client CNIC", "Bike Chassis No", "Purchase Price", "Sale Price", 
-            "Date","Product Status", "Payment Method", "Remaining Amount", "Duration", "Advance Payment", "Monthly Installment", "Action"
-        ])
+        
+        headers = [
+            "Select", 
+            "Client\nName", 
+            "Client\nMobile\nNo", 
+            "Client\nCNIC", 
+            "Bike\nChassis\nNo", 
+            "Purchase\nPrice", 
+            "Sale\nPrice", 
+            "Date", 
+            "Product\nStatus", 
+            "Payment\nMethod", 
+            "Remaining\nAmount", 
+            "Duration", 
+            "Advance\nPayment", 
+            "Monthly\nInstallment", 
+            "Action"
+        ]
+        
+        tooltips = [
+           "Select", 
+            "Client Name", 
+            "Client Mobile No", 
+            "Client CNIC", 
+            "Bike Chassis No", 
+            "Purchase Price", 
+            "Sale Price", 
+            "Date", 
+            "Product Status", 
+            "Payment Method", 
+            "Remaining Amount", 
+            "Duration", 
+            "Advance Payment", 
+            "Monthly Installment", 
+            "Action"
+        ]
+
+        # Set horizontal header labels
+        table.setHorizontalHeaderLabels(headers)
+
+        # Set tooltips for each header item
+        for i in range(len(headers)):
+            item = QTableWidgetItem(headers[i])
+            item.setToolTip(tooltips[i])  # Setting tooltip on the header item
+            table.setHorizontalHeaderItem(i, item)
+
         header = table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
         table.setStyleSheet("""
             QTableWidget {
                 background-color: white;
@@ -128,8 +171,10 @@ class UserPage(QWidget):
                 font-weight: bold;
             }
         """)
+
         table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
+        
         return table
 
 
@@ -158,8 +203,8 @@ class UserPage(QWidget):
             SELECT client_name, client_mobile, client_cnic, chassis_no, 'None' AS purchase_price, sale_price,
                 sale_date, product_status, payment_method, remaining_amount, duration, advance_payment, 
                 monthly_installment
-            FROM sales
-            {where_clause}
+            FROM sales 
+            {where_clause} ORDER BY id DESC
         """
         
         # Query to fetch inventory data
@@ -349,18 +394,14 @@ class NewSaleDialog(QDialog):
 
         self.duration = QComboBox()
         self.duration.addItems([str(i) for i in range(1, 13)])  # 1 to 12 months
-        # Assuming duration, monthly_installment, and remaining_amount are already defined as floats
         self.duration.setCurrentText(str(duration))
         self.monthly_installment = QLineEdit()
-        self.monthly_installment.setText(str(int(monthly_installment)))  # Convert to integer
+        self.monthly_installment.setText(str(monthly_installment))
         self.monthly_installment.setReadOnly(True)
         self.remaining_amount = QLineEdit()
-        self.remaining_amount.setText(str(int(remaining_amount)))  # Convert to integer
+        self.remaining_amount.setText(str(remaining_amount))
         self.remaining_amount.setReadOnly(True)
-
         self.payment_no = QLineEdit()
-
-        # Add the widgets to the layout
         layout.addRow("Chassis No:", self.chassis_no)
         layout.addRow("Duration (Months):", self.duration)
         layout.addRow("Monthly Installment:", self.monthly_installment)
