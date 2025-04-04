@@ -3,9 +3,10 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QMessageBox,
     QHBoxLayout, QLabel, QLineEdit, QHeaderView, QApplication, QDialog, QFormLayout,QDateEdit, QCheckBox, QComboBox
 )
-from PyQt6.QtGui import QPixmap, QFont
+from PyQt6.QtGui import QPixmap, QFont, QTextOption
 from PyQt6.QtCore import Qt, QDate
 from PyQt6.QtGui import QPixmap, QFont
+<<<<<<< HEAD
 import os,sys
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and frozen """
@@ -16,6 +17,33 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
     
+=======
+
+from PyQt6.QtWidgets import QStyledItemDelegate
+from PyQt6.QtCore import QSize
+
+
+from PyQt6.QtWidgets import QStyledItemDelegate
+from PyQt6.QtCore import Qt, QSize, QRectF
+from PyQt6.QtGui import QTextOption
+
+class HeaderDelegate(QStyledItemDelegate):
+    def paint(self, painter, option, index):
+        painter.save()
+        
+        # Set up text option for word wrapping
+        text_option = QTextOption()
+        text_option.setWrapMode(QTextOption.WrapMode.WordWrap)
+        
+        # Draw the header item with wrapped text
+        painter.drawText(QRectF(option.rect), index.data(), text_option)
+        painter.restore()
+
+    def sizeHint(self, option, index):
+        return QSize(100, 40)  # Customize size for headers
+
+
+>>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
 class SalesPage(QWidget):
     def __init__(self):
         super().__init__()
@@ -139,6 +167,62 @@ class SalesPage(QWidget):
         layout.setContentsMargins(0, 0, 20, 20)
 
         return layout
+<<<<<<< HEAD
+=======
+    
+    # def setup_table(self):
+    #     table = QTableWidget()
+    #     table.setColumnCount(15)
+    #     table.setHorizontalHeaderLabels([
+    #         "Select", "Client\nName", "Client\nCNIC", "Client Mobile\nNo", "Chassis No", 
+    #         "Sale\nPrice", "Purchase\nPrice", "Sale\nDate", "Profit", "Payment\nMethod",
+    #         "Remaining\nAmount", "Duration", "Advance\nPayment", "Monthly\nInstallment", "Status"
+    #     ])
+        
+    #     # Set tooltips for headers
+    #     header_labels = [
+    #         "Select", "Client\nName", "Client\nCNIC", "Client Mobile\nNo", "Chassis No", 
+    #         "Sale\nPrice", "Purchase\nPrice", "Sale\nDate", "Profit", "Payment\nMethod",
+    #         "Remaining\nAmount", "Duration", "Advance\nPayment", "Monthly\nInstallment", "Status"
+    #     ]
+        
+    #     for i, label in enumerate(header_labels):
+    #         item = table.horizontalHeaderItem(i)
+    #         if item is not None:
+    #             item.setToolTip(label)
+
+    #     header = table.horizontalHeader()
+    #     header.setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+
+    #     # Set specific widths for columns to avoid bottom scrollbar
+    #     column_widths = [50, 120, 100, 100, 100, 100, 100, 100, 100, 120, 120, 80, 120, 120, 100]
+    #     for i, width in enumerate(column_widths):
+    #         header.resizeSection(i, width)
+
+    #     # Set the item delegate for the header
+    #     table.setItemDelegateForColumn(0, HeaderDelegate())
+
+    #     table.setStyleSheet("""
+    #         QTableWidget {
+    #             background-color: white;
+    #             gridline-color: #004d00;
+    #             font-size: 14px;
+    #             color: black;
+    #             margin: 10px;
+    #         } 
+    #         QHeaderView::section {
+    #             background-color: #004d00;
+    #             color: white;
+    #             font-weight: bold;
+    #             padding: 5px;  /* Padding for better visual appearance */
+    #         }
+    #     """)
+        
+    #     table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+    #     table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
+        
+    #     return table
+>>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
 
     def setup_table(self):
         table = QTableWidget()
@@ -188,6 +272,33 @@ class SalesPage(QWidget):
         
         return table
 
+<<<<<<< HEAD
+=======
+
+
+
+    # def load_sales(self, search_term=""):
+    #     self.connection = sqlite3.connect("pos_database.db")
+    #     cursor = self.connection.cursor()
+    #     query = """
+    #         SELECT client_name, client_cnic, client_mobile, chassis_no, sale_price, 
+    #             purchase_price, sale_date, profit, payment_method, remaining_amount, 
+    #             duration, advance_payment, monthly_installment, product_status 
+    #         FROM sales
+    #         WHERE client_name LIKE ? OR client_cnic LIKE ? OR client_mobile LIKE ? OR chassis_no LIKE ?
+    #     """
+    #     cursor.execute(query, ('%'+search_term+'%',)*4)
+    #     records = cursor.fetchall()
+    #     self.table.setRowCount(len(records))
+    #     for row_idx, row_data in enumerate(records):
+    #         checkbox = QTableWidgetItem()
+    #         checkbox.setCheckState(Qt.CheckState.Unchecked)
+    #         self.table.setItem(row_idx, 0, checkbox)
+    #         for col_idx, col_data in enumerate(row_data):
+    #             self.table.setItem(row_idx, col_idx + 1, QTableWidgetItem(str(col_data)))
+    #     self.connection.close()
+
+>>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
     def load_sales(self, search_term=""):
         self.connection = sqlite3.connect("pos_database.db")
         cursor = self.connection.cursor()
@@ -195,7 +306,11 @@ class SalesPage(QWidget):
             SELECT client_name, client_cnic, client_mobile, chassis_no, sale_price, 
                 purchase_price, sale_date, profit, payment_method, remaining_amount, 
                 duration, advance_payment, monthly_installment, product_status 
+<<<<<<< HEAD
             FROM sales
+=======
+            FROM sales 
+>>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
             WHERE client_name LIKE ? OR client_cnic LIKE ? OR client_mobile LIKE ? OR chassis_no LIKE ? ORDER BY id DESC
         """
         cursor.execute(query, ('%'+search_term+'%',)*4)

@@ -137,7 +137,11 @@ class UserPage(QWidget):
 
     def setup_table(self):
         table = QTableWidget()
+<<<<<<< HEAD
         table.setColumnCount(16)  # Increase column count by one for the checkbox
+=======
+        table.setColumnCount(15)  # Increase column count by one for the checkbox
+>>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
         
         headers = [
             "Select", 
@@ -154,8 +158,12 @@ class UserPage(QWidget):
             "Duration", 
             "Advance\nPayment", 
             "Monthly\nInstallment", 
+<<<<<<< HEAD
             "Action",
             "View"
+=======
+            "Action"
+>>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
         ]
         
         tooltips = [
@@ -173,8 +181,12 @@ class UserPage(QWidget):
             "Duration", 
             "Advance Payment", 
             "Monthly Installment", 
+<<<<<<< HEAD
             "Action",
             "view"
+=======
+            "Action"
+>>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
         ]
 
         # Set horizontal header labels
@@ -237,8 +249,12 @@ class UserPage(QWidget):
                 sale_date, product_status, payment_method, remaining_amount, duration, advance_payment, 
                 monthly_installment
             FROM sales 
+<<<<<<< HEAD
             {where_clause}
             ORDER BY id DESC
+=======
+            {where_clause} ORDER BY id DESC
+>>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
         """
         
         # Query to fetch inventory data
@@ -459,15 +475,21 @@ class NewSaleDialog(QDialog):
         self.duration.setCurrentText(str(duration))
 
         self.monthly_installment = QLineEdit()
-        self.monthly_installment.setText(str(int(monthly_installment)))  # Convert to integer
+        self.monthly_installment.setText(str(monthly_installment))
         self.monthly_installment.setReadOnly(True)
 
         self.remaining_amount = QLineEdit()
+<<<<<<< HEAD
         self.remaining_amount.setText(str(int(remaining_amount)))  # Convert to integer
 
         self.payment_no = QLineEdit()
 
         # Setup layout
+=======
+        self.remaining_amount.setText(str(remaining_amount))
+        self.remaining_amount.setReadOnly(True)
+        self.payment_no = QLineEdit()
+>>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
         layout.addRow("Chassis No:", self.chassis_no)
         layout.addRow("Client Name:", self.client_name)
         layout.addRow("Duration (Months):", self.duration)

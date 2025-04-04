@@ -122,9 +122,6 @@ class InventoryPage(QMainWindow):
         """)
         button.setFixedSize(200, 30)  # Match dimensions with the search bar
         return button
-    
-    
-    
     def setup_table(self):
         table = QTableWidget()
         table.setColumnCount(10)
@@ -170,9 +167,7 @@ class InventoryPage(QMainWindow):
         table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)  # Correct way to disable selection
 
         return table
-
-
-    
+        
     def create_search_bar(self):
         layout = QHBoxLayout()
         layout.addStretch(1)  # Pushes the search bar to the right
