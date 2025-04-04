@@ -6,6 +6,9 @@ from PyQt6.QtCore import Qt
 from inventory import InventoryPage
 from sales import SalesPage
 from user_maagement import UserManagement
+from Expense import ExpensePage
+from Totals import TotalsPage
+
 import sys
 import os
 
@@ -21,12 +24,7 @@ def resource_path(relative_path):
     
     
 class HomePage(QMainWindow):
-    # def __init__(self):
-    #     super().__init__()
-    #     self.setWindowTitle("Bismillah Motors - Home")
-    #     self.setGeometry(100, 100, 800, 600)  # Starting window size
-        
-    #     self.initUI()
+    
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Bismillah Motors - Home")
@@ -117,9 +115,17 @@ class HomePage(QMainWindow):
         sales_button.clicked.connect(self.open_sales_page)
         button_layout.addWidget(sales_button, 0, Qt.AlignmentFlag.AlignHCenter)
 
+        Expenses_button = create_button("Expenses")
+        Expenses_button.clicked.connect(self.open_Expense_page)
+        button_layout.addWidget(Expenses_button, 0, Qt.AlignmentFlag.AlignHCenter)
+        
         users_button = create_button("User Management")
         users_button.clicked.connect(self.open_user_management_page)
         button_layout.addWidget(users_button, 0, Qt.AlignmentFlag.AlignHCenter)
+        
+        Totals_button = create_button("Totals")
+        Totals_button.clicked.connect(self.open_Totals_page)
+        button_layout.addWidget(Totals_button, 0, Qt.AlignmentFlag.AlignHCenter)
 
         button_layout.addStretch(1)
         main_layout.addLayout(button_layout)
@@ -135,5 +141,13 @@ class HomePage(QMainWindow):
     def open_user_management_page(self):
         self.user_management_page = UserManagement()
         self.user_management_page.show()
+        
+    def open_Expense_page(self):
+        self.Expense = ExpensePage()
+        self.Expense.show()
+        
+    def open_Totals_page(self):
+        self.Expense = TotalsPage()
+        self.Expense.show()
 
     

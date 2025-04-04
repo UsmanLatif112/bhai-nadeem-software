@@ -70,7 +70,27 @@ def initialize_db():
             inverted_id INTEGER
         )
     ''')
-
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS expense (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            expense TEXT,
+            description TEXT,
+            expense_price REAL,
+            expense_date TEXT DEFAULT (DATE('now'))
+        )
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS payments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_name TEXT,
+            chassis_no TEXT,
+            payment_amount REAL,
+            payment_date TEXT DEFAULT (DATE('now'))
+        )
+    ''')
+    
     conn.commit()
     conn.close()
 

@@ -127,13 +127,30 @@ class InventoryPage(QMainWindow):
     
     def setup_table(self):
         table = QTableWidget()
-        table.setColumnCount(10)  
-        table.setHorizontalHeaderLabels([
-            "Select", "ID", "Bike Name", "Bike Model", "Chassis No", "Reg No", "Client Name",
-            "Purchase Price","Purchase Date", "Status"
-        ])
+        table.setColumnCount(10)
+        headers = [
+            "Select", "ID", "Bike Name", "Bike Model", "Chassis No",
+            "Reg No", "Client Name", "Purchase Price", "Purchase Date", "Status"
+        ]
+        
+        tooltips = [
+            "Select", "ID", "Bike Name", "Bike ", "Chassis No",
+            "Reg No", "Client Name", "Purchase Price", "Purchase Date", "Status"
+        ]
+
+        # Set the horizontal header labels
+        table.setHorizontalHeaderLabels(headers)
+
+        # Set tooltips for each header item
+        for i in range(len(headers)):
+            item = QTableWidgetItem(headers[i])
+            item.setToolTip(tooltips[i])  # Set tooltip for the column header
+            table.setHorizontalHeaderItem(i, item)
+
+        # Get the horizontal header
         header = table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
         table.setStyleSheet("""
             QTableWidget {
                 background-color: white;
@@ -195,13 +212,13 @@ class InventoryPage(QMainWindow):
                 if search_term:
                     query = """
                         SELECT id, bike_name, bike_model, chassis_no, reg_no, client_name,purchase_price, purchase_date, product_status FROM inventory
-                        WHERE bike_name LIKE ? OR bike_model LIKE ? OR chassis_no LIKE ? OR reg_no LIKE ? OR client_name LIKE ? OR purchase_date LIKE ? OR product_status LIKE ?
+                        WHERE bike_name LIKE ? OR bike_model LIKE ? OR chassis_no LIKE ? OR reg_no LIKE ? OR client_name LIKE ? OR purchase_date LIKE ? OR product_status LIKE ? ORDER BY id DESC
                     """
                     search_term = f'%{search_term}%'
                     cursor.execute(query, (search_term,) * 7)
                 else:
                     query = """
-                        SELECT id, bike_name, bike_model, chassis_no, reg_no, client_name,purchase_price, purchase_date, product_status, purchase_price FROM inventory
+                        SELECT id, bike_name, bike_model, chassis_no, reg_no, client_name,purchase_price, purchase_date, product_status, purchase_price FROM inventory ORDER BY id DESC
                     """
                     cursor.execute(query)
 
@@ -270,7 +287,7 @@ class AddInventoryDialog(QDialog):
         self.purchase_date = QDateEdit()
         self.purchase_date.setCalendarPopup(True)
         self.purchase_date.setDate(QDate.currentDate())
-        self.purchase_date.setDisplayFormat("dd-MM-yyyy")
+        self.purchase_date.setDisplayFormat("yyyy-MM-dd")
         self.purchase_price = QLineEdit()  # Field for entering purchase price
 
         layout.addRow("Bike Name:", self.bike_name)
@@ -301,7 +318,7 @@ class AddInventoryDialog(QDialog):
             # Insert new inventory item, including validated purchase price
             cursor.execute(
                 "INSERT INTO inventory (bike_name, bike_model, chassis_no, reg_no, client_name, client_mobile, client_cnic, purchase_date, purchase_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (self.bike_name.text(), self.bike_model.text(), self.chassis_no.text(), self.reg_no.text(), self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.purchase_date.date().toString("dd-MM-yyyy"), purchase_price)
+                (self.bike_name.text(), self.bike_model.text(), self.chassis_no.text(), self.reg_no.text(), self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.purchase_date.date().toString("yyyy-MM-dd"), purchase_price)
             )
             sales_id_data = cursor.lastrowid 
             # Check if user already exists in the users table
@@ -319,27 +336,7 @@ class AddInventoryDialog(QDialog):
                     "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date, inverted_id) VALUES (?, ?, ?, ?, ?)",
                     (self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.purchase_date.date().toString("yyyy-MM-dd"), sales_id_data)
                 )
-            # if not user_exists:
-                # Insert new user if not exists
-                # cursor.execute(
-                #     "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date,inverted_id) VALUES (?, ?, ?, ?, ?)",
-                #     (self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.purchase_date.date().toString("yyyy-MM-dd"),sales_id_data)
-                # )
-                # cursor.execute(
-                #     "INSERT INTO users (client_name, client_cnic, client_mobile, chassis_no, purchase_date) VALUES (?, ?, ?, ?, ?)",
-                #     (self.client_name.text(), self.client_cnic.text(), self.client_mobile.text(), self.chassis_no.text(), self.purchase_date.date().toString("dd-MM-yyyy"))
-                # )
-            # else:
-                # Update existing user data
-                # cursor.execute(
-                #     "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date,sales_id) VALUES (?, ?, ?, ?, ?)",
-                #     (self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.sale_date.date().toString("yyyy-MM-dd"),sales_id_data)
-                # )
-                # cursor.execute(
-                #     "UPDATE users SET client_name = ?, client_mobile = ?, purchase_date = ? WHERE client_cnic = ?",
-                #     (self.client_name.text(), self.client_mobile.text(), self.chassis_no.text(), self.purchase_date.date().toString("dd-MM-yyyy"), self.client_cnic.text())
-                # )
-            
+    
             conn.commit()
             QMessageBox.information(self, "Success", "Inventory and User updated successfully!")
             self.accept()

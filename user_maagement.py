@@ -92,7 +92,7 @@ class UserManagement(QMainWindow):
         header_layout.addWidget(logo_label, 0, Qt.AlignmentFlag.AlignVCenter)
 
         # Title in the center
-        header_text = QLabel("BISMILLAH MOTERS")
+        header_text = QLabel("BISMILLAH MOTORS")
         header_text.setStyleSheet("color: white;")
         header_text.setFont(QFont("Arial", 24, QFont.Weight.Bold))
         header_layout.addStretch(1)
@@ -185,7 +185,7 @@ class UserManagement(QMainWindow):
         query = """
             SELECT id,sales_id,inverted_id, client_name, client_mobile, client_cnic, date
             FROM usersmanagement
-            WHERE client_name LIKE ? OR client_mobile LIKE ? OR client_cnic LIKE ?
+            WHERE client_name LIKE ? OR client_mobile LIKE ? OR client_cnic LIKE ? ORDER BY id DESC
         """
         like_input = f"%{search_term}%"
         cursor.execute(query, (like_input, like_input, like_input))
@@ -221,6 +221,8 @@ class UserManagement(QMainWindow):
         # This method now opens the UserDetail page
         self.detail_window = UserPage(user_id,invertr_id)
         self.detail_window.show()
+        
+
     def delete_selected_users(self):
         """
         Deletes all users whose "Select" checkbox is checked.

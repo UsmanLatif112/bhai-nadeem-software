@@ -143,13 +143,31 @@ class SalesPage(QWidget):
     def setup_table(self):
         table = QTableWidget()
         table.setColumnCount(15)
-        table.setHorizontalHeaderLabels([
-            "Select", "Client Name", "Client CNIC", "Client Mobile No", "Chassis No", 
+        
+        headers = [
+            "Select", "Client\nName", "Client\nCNIC", "Client\nMobileNo", "Chassis\nNo", 
+            "Sale\nPrice", "Purchase\nPrice", "Sale\nDate", "Profit", "Payment\nMethod",
+            "Remaining\nAmount", "Duration", "Advance\nPayment", "Monthly\nInstallment", "Status"
+        ]
+        
+        tooltips = [
+            "Select", "Client Name", "Client CNIC", "Client MobileNo", "Chassis No", 
             "Sale Price", "Purchase Price", "Sale Date", "Profit", "Payment Method",
             "Remaining Amount", "Duration", "Advance Payment", "Monthly Installment", "Status"
-        ])
+        ]
+
+        # Set horizontal header labels
+        table.setHorizontalHeaderLabels(headers)
+
+        # Set tooltips for each header item
+        for i in range(len(headers)):
+            item = QTableWidgetItem(headers[i])
+            item.setToolTip(tooltips[i])  # Setting tooltip on the header item
+            table.setHorizontalHeaderItem(i, item)
+
         header = table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
         table.setStyleSheet("""
             QTableWidget {
                 background-color: white;
@@ -164,8 +182,10 @@ class SalesPage(QWidget):
                 font-weight: bold;
             }
         """)
+
         table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)  # Correct value to disable selection
+        
         return table
 
     def load_sales(self, search_term=""):
@@ -176,7 +196,7 @@ class SalesPage(QWidget):
                 purchase_price, sale_date, profit, payment_method, remaining_amount, 
                 duration, advance_payment, monthly_installment, product_status 
             FROM sales
-            WHERE client_name LIKE ? OR client_cnic LIKE ? OR client_mobile LIKE ? OR chassis_no LIKE ?
+            WHERE client_name LIKE ? OR client_cnic LIKE ? OR client_mobile LIKE ? OR chassis_no LIKE ? ORDER BY id DESC
         """
         cursor.execute(query, ('%'+search_term+'%',)*4)
         records = cursor.fetchall()
@@ -428,11 +448,6 @@ class NewSaleDialog(QDialog):
                     "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date, sales_id) VALUES (?, ?, ?, ?, ?)",
                     (self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.sale_date.date().toString("yyyy-MM-dd"), sales_id_data)
                 )
-            # if not user_exists:
-            #     cursor.execute(
-            #             "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date,sales_id) VALUES (?, ?, ?, ?, ?)",
-            #             (self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.sale_date.date().toString("yyyy-MM-dd"),sales_id_data)
-            #         )
                 
             self.connection.commit()
             QMessageBox.information(self, "Success", "Sale added successfully.")

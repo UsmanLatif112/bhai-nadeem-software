@@ -13,6 +13,9 @@ from PyQt6.QtGui import QPainter
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QMessageBox 
 import os,sys
+from Instalment import Installment_pages
+
+
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and frozen """
     try:
@@ -46,6 +49,11 @@ class UserPage(QWidget):
         button_bar_layout = self.create_button_bar()
         self.layout.addLayout(button_bar_layout)
         self.load_sales()
+        
+    def open_installment_page(self, chassis_no):
+        # Assuming Installment_pages takes chassis_no as an initializer argument
+        self.installment_page = Installment_pages(chassis_no)
+        self.installment_page.show()
 
     def create_header(self):
         header_widget = QWidget()
@@ -129,13 +137,58 @@ class UserPage(QWidget):
 
     def setup_table(self):
         table = QTableWidget()
-        table.setColumnCount(15)  # Increase column count by one for the checkbox
-        table.setHorizontalHeaderLabels([
-            "Select", "Client Name", "Client Mobile No", "Client CNIC", "Bike Chassis No", "Purchase Price", "Sale Price", 
-            "Date","Product Status", "Payment Method", "Remaining Amount", "Duration", "Advance Payment", "Monthly Installment", "Action"
-        ])
+        table.setColumnCount(16)  # Increase column count by one for the checkbox
+        
+        headers = [
+            "Select", 
+            "Client\nName", 
+            "Client\nMobile\nNo", 
+            "Client\nCNIC", 
+            "Bike\nChassis\nNo", 
+            "Purchase\nPrice", 
+            "Sale\nPrice", 
+            "Date", 
+            "Product\nStatus", 
+            "Payment\nMethod", 
+            "Remaining\nAmount", 
+            "Duration", 
+            "Advance\nPayment", 
+            "Monthly\nInstallment", 
+            "Action",
+            "View"
+        ]
+        
+        tooltips = [
+           "Select", 
+            "Client Name", 
+            "Client Mobile No", 
+            "Client CNIC", 
+            "Bike Chassis No", 
+            "Purchase Price", 
+            "Sale Price", 
+            "Date", 
+            "Product Status", 
+            "Payment Method", 
+            "Remaining Amount", 
+            "Duration", 
+            "Advance Payment", 
+            "Monthly Installment", 
+            "Action",
+            "view"
+        ]
+
+        # Set horizontal header labels
+        table.setHorizontalHeaderLabels(headers)
+
+        # Set tooltips for each header item
+        for i in range(len(headers)):
+            item = QTableWidgetItem(headers[i])
+            item.setToolTip(tooltips[i])  # Setting tooltip on the header item
+            table.setHorizontalHeaderItem(i, item)
+
         header = table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
         table.setStyleSheet("""
             QTableWidget {
                 background-color: white;
@@ -150,8 +203,10 @@ class UserPage(QWidget):
                 font-weight: bold;
             }
         """)
+
         table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
+        
         return table
 
 
@@ -181,8 +236,9 @@ class UserPage(QWidget):
             SELECT client_name, client_mobile, client_cnic, chassis_no, 'None' AS purchase_price, sale_price,
                 sale_date, product_status, payment_method, remaining_amount, duration, advance_payment, 
                 monthly_installment
-            FROM sales
+            FROM sales 
             {where_clause}
+            ORDER BY id DESC
         """
         
         # Query to fetch inventory data
@@ -190,8 +246,9 @@ class UserPage(QWidget):
             SELECT client_name, client_mobile, client_cnic, chassis_no, purchase_price, 'None' AS sale_price,
                 purchase_date, product_status, 'None' AS payment_method, 'None' AS remaining_amount, 
                 'None' AS duration, 'None' AS advance_payment, 'None' AS monthly_installment
-            FROM inventory
+            FROM inventory 
             {where_clause}
+            ORDER BY id DESC
         """
 
         # Execute queries with the CNIC as parameter and the search term
@@ -218,7 +275,10 @@ class UserPage(QWidget):
                     manage_btn = QPushButton("Manage")
                     manage_btn.clicked.connect(lambda _, sale_id=row_data[3] : self.open_new_sale_dialog(sale_id))
                     self.table.setCellWidget(row_idx, 14, manage_btn)
-
+                    
+                    view_btn = QPushButton("View")
+                    view_btn.clicked.connect(lambda _, chassis_no=row_data[3]: self.open_installment_page(chassis_no))
+                    self.table.setCellWidget(row_idx, 15, view_btn)
 
         self.connection.close()
 
@@ -369,29 +429,30 @@ class UserPage(QWidget):
     def open_new_sale_dialog(self,row_id):
         connection = sqlite3.connect("pos_database.db")
         cursor = connection.cursor()
-        cursor.execute("SELECT chassis_no,monthly_installment,duration,remaining_amount FROM sales WHERE chassis_no = ?", (row_id,))
+        cursor.execute("SELECT chassis_no,client_name, monthly_installment,duration,remaining_amount FROM sales WHERE chassis_no = ?", (row_id,))
         result = cursor.fetchone()
         connection.close()
-
         chassis_no = result[0]
-        monthly_installment = result[1]
-        duration = result[2]
-        remaining_amount = result[3]
-        dialog = NewSaleDialog(chassis_no, monthly_installment, duration, remaining_amount, parent=self)
+        client_name = result[1]
+        monthly_installment = result[2]
+        duration = result[3]
+        remaining_amount = result[4]
+        dialog = NewSaleDialog(chassis_no,client_name, monthly_installment, duration, remaining_amount, parent=self)
         dialog.exec()
 
 
 class NewSaleDialog(QDialog):
-    def __init__(self, chassis_no, monthly_installment, duration, remaining_amount, parent=None):
+    def __init__(self, chassis_no, client_name, monthly_installment, duration, remaining_amount, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Update Payments")
-        self.setGeometry(300, 300, 400, 200)
+        self.setGeometry(300, 200, 400, 200)
         layout = QFormLayout(self)
-
-        # Initialize input fields
         self.chassis_no = QLineEdit()
         self.chassis_no.setText(chassis_no)
         self.chassis_no.setReadOnly(True)
+        
+        self.client_name = QLineEdit(client_name)
+        self.client_name.setReadOnly(True)
 
         self.duration = QComboBox()
         self.duration.addItems([str(i) for i in range(1, 13)])  # 1 to 12 months
@@ -408,6 +469,7 @@ class NewSaleDialog(QDialog):
 
         # Setup layout
         layout.addRow("Chassis No:", self.chassis_no)
+        layout.addRow("Client Name:", self.client_name)
         layout.addRow("Duration (Months):", self.duration)
         layout.addRow("Monthly Installment:", self.monthly_installment)
         layout.addRow("Remaining Amount:", self.remaining_amount)
@@ -446,38 +508,42 @@ class NewSaleDialog(QDialog):
 
 
     def submit_sale(self):
-        # Implement the logic to handle sale submission
         print("Sale submitted with the following details:")
         print(f"Chassis No: {self.chassis_no.text()}")
         print(f"Duration: {self.duration.currentText()}")
         print(f"Monthly Installment: {self.monthly_installment.text()}")
         print(f"Remaining Amount: {self.remaining_amount.text()}")
         self.accept()  # Close the dialog (consider using self.close() if not modal)
-
-    def submit_sale(self):
-        # Get the current values from the dialog
+        payment_amount = float(self.payment_no.text()) if self.payment_no.text() else 0
+        payment_date = QDate.currentDate().toString("yyyy-MM-dd")
         chassis_no = self.chassis_no.text()
+        client_name = self.client_name.text()
         duration = int(self.duration.currentText())
         monthly_installment = float(self.monthly_installment.text())
-        remaining_amount = float(self.remaining_amount.text())
-        print(self.payment_no.text(),'----------')
+        remaining_amount = float(self.remaining_amount.text()) - payment_amount
         try:
-            connection = sqlite3.connect("pos_database.db")  # Replace with the actual database file path
+            connection = sqlite3.connect("pos_database.db")
             cursor = connection.cursor()
             cursor.execute("""
                 UPDATE sales
-                SET duration = ?,add_payment=?, monthly_installment = ?, remaining_amount = ?
+                SET duration = ?, monthly_installment = ?, remaining_amount = ?
                 WHERE chassis_no = ?
-            """, (duration,self.payment_no.text(), monthly_installment, remaining_amount, chassis_no))
+            """, (duration, monthly_installment, remaining_amount, chassis_no))
+            
+            cursor.execute("""
+                INSERT INTO payments (client_name, chassis_no, payment_amount, payment_date)
+                VALUES (?, ?, ?, ?)
+            """, (client_name, chassis_no, payment_amount, payment_date))
+        
             connection.commit()
             connection.close()
-            QMessageBox.information(self, "Submitted", "Sale details updated successfully.")
-            self.parent().load_sales()
+            QMessageBox.information(self, "Submitted", "Sale details and payment updated successfully.")
+            self.parent().load_sales()  # Reload sales data in parent window
             self.accept()  # Close the dialog
 
         except sqlite3.Error as e:
-            QMessageBox.warning(self, "Error", f"Failed to update sale details: {str(e)}")
-
+            QMessageBox.warning(self, "Error", f"Failed to update sale details and record payment: {str(e)}")
+    # 
 
 if __name__ == "__main__":
     app = QApplication([])
