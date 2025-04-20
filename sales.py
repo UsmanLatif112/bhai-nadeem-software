@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QPixmap, QFont, QTextOption
 from PyQt6.QtCore import Qt, QDate
 from PyQt6.QtGui import QPixmap, QFont
-<<<<<<< HEAD
+# <<<<<<< HEAD
 import os,sys
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and frozen """
@@ -17,7 +17,7 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
     
-=======
+# =======
 
 from PyQt6.QtWidgets import QStyledItemDelegate
 from PyQt6.QtCore import QSize
@@ -43,7 +43,7 @@ class HeaderDelegate(QStyledItemDelegate):
         return QSize(100, 40)  # Customize size for headers
 
 
->>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
+# >>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
 class SalesPage(QWidget):
     def __init__(self):
         super().__init__()
@@ -167,8 +167,8 @@ class SalesPage(QWidget):
         layout.setContentsMargins(0, 0, 20, 20)
 
         return layout
-<<<<<<< HEAD
-=======
+# <<<<<<< HEAD
+# =======
     
     # def setup_table(self):
     #     table = QTableWidget()
@@ -222,7 +222,7 @@ class SalesPage(QWidget):
     #     table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
         
     #     return table
->>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
+# >>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
 
     def setup_table(self):
         table = QTableWidget()
@@ -272,8 +272,8 @@ class SalesPage(QWidget):
         
         return table
 
-<<<<<<< HEAD
-=======
+# <<<<<<< HEAD
+# =======
 
 
 
@@ -298,7 +298,7 @@ class SalesPage(QWidget):
     #             self.table.setItem(row_idx, col_idx + 1, QTableWidgetItem(str(col_data)))
     #     self.connection.close()
 
->>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
+# >>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
     def load_sales(self, search_term=""):
         self.connection = sqlite3.connect("pos_database.db")
         cursor = self.connection.cursor()
@@ -306,11 +306,7 @@ class SalesPage(QWidget):
             SELECT client_name, client_cnic, client_mobile, chassis_no, sale_price, 
                 purchase_price, sale_date, profit, payment_method, remaining_amount, 
                 duration, advance_payment, monthly_installment, product_status 
-<<<<<<< HEAD
-            FROM sales
-=======
             FROM sales 
->>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
             WHERE client_name LIKE ? OR client_cnic LIKE ? OR client_mobile LIKE ? OR chassis_no LIKE ? ORDER BY id DESC
         """
         cursor.execute(query, ('%'+search_term+'%',)*4)
@@ -382,7 +378,7 @@ class NewSaleDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("New Sale")
-        self.setGeometry(300, 300, 400, 600)
+        self.setGeometry(300, 300, 400, 300)
         layout = QFormLayout(self)
         # self.setup_ui()
         self.connection = sqlite3.connect("pos_database.db")
@@ -549,20 +545,74 @@ class NewSaleDialog(QDialog):
                 (self.chassis_no.text(),)
                 )
                 # Update or insert user data
-            user_exists = cursor.execute(
-                "SELECT EXISTS(SELECT 1 FROM usersmanagement WHERE client_cnic = ?)",
-                (self.client_cnic.text(),)
-            ).fetchone()[0]
-            if user_exists: 
-                cursor.execute(
-                    "UPDATE usersmanagement SET sales_id = ? WHERE client_cnic = ?",
-                    (sales_id_data, self.client_cnic.text())
-                )
+            cnic = self.client_cnic.text().strip()
+            name = self.client_name.text().strip()
+
+            if not cnic or cnic == "0":
+                # CNIC is empty or zero, check by name
+                name_exists = cursor.execute(
+                    "SELECT EXISTS(SELECT 1 FROM usersmanagement WHERE client_name = ?)",
+                    (name,)
+                ).fetchone()[0]
+
+                if name_exists:
+                    # Name exists, update date
+                    cursor.execute(
+                        "UPDATE usersmanagement SET date = ? WHERE client_name = ?",
+                        (self.sale_date.date().toString("yyyy-MM-dd"), name)
+                    )
+                else:
+                    # Name doesn't exist, insert new
+                    cursor.execute(
+                        "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date, sales_id) VALUES (?, ?, ?, ?, ?)",
+                        (
+                            name,
+                            self.client_mobile.text(),
+                            cnic,
+                            self.sale_date.date().toString("yyyy-MM-dd"),
+                            sales_id_data
+                        )
+                    )
             else:
-                cursor.execute(
-                    "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date, sales_id) VALUES (?, ?, ?, ?, ?)",
-                    (self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.sale_date.date().toString("yyyy-MM-dd"), sales_id_data)
-                )
+                # CNIC is provided, check if it exists
+                user_exists = cursor.execute(
+                    "SELECT EXISTS(SELECT 1 FROM usersmanagement WHERE client_cnic = ?)",
+                    (cnic,)
+                ).fetchone()[0]
+
+                if user_exists:
+                    # CNIC exists, update sales_id
+                    cursor.execute(
+                        "UPDATE usersmanagement SET sales_id = ? WHERE client_cnic = ?",
+                        (sales_id_data, cnic)
+                    )
+                else:
+                    # CNIC doesn't exist, insert new
+                    cursor.execute(
+                        "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date, sales_id) VALUES (?, ?, ?, ?, ?)",
+                        (
+                            name,
+                            self.client_mobile.text(),
+                            cnic,
+                            self.sale_date.date().toString("yyyy-MM-dd"),
+                            sales_id_data
+                        )
+                    )
+
+            # user_exists = cursor.execute(
+            #     "SELECT EXISTS(SELECT 1 FROM usersmanagement WHERE client_cnic = ?)",
+            #     (self.client_cnic.text(),)
+            # ).fetchone()[0]
+            # if user_exists: 
+            #     cursor.execute(
+            #         "UPDATE usersmanagement SET sales_id = ? WHERE client_cnic = ?",
+            #         (sales_id_data, self.client_cnic.text())
+            #     )
+            # else:
+            #     cursor.execute(
+            #         "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date, sales_id) VALUES (?, ?, ?, ?, ?)",
+            #         (self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.sale_date.date().toString("yyyy-MM-dd"), sales_id_data)
+            #     )
                 
             self.connection.commit()
             QMessageBox.information(self, "Success", "Sale added successfully.")

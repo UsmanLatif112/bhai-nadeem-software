@@ -270,7 +270,7 @@ class AddInventoryDialog(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Add New Expense")
-        self.setGeometry(300, 300, 400, 350)
+        self.setGeometry(300, 300, 400, 150)
         layout = QFormLayout(self)
 
         self.expense = QLineEdit()

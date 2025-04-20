@@ -3,6 +3,10 @@ from PyQt6.QtWidgets import (QMessageBox,
     QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QMessageBox,
     QHBoxLayout, QLabel, QLineEdit, QHeaderView, QApplication, QDialog, QFormLayout,QDateEdit, QCheckBox, QComboBox
 )
+import sys
+from PyQt6.QtWidgets import QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QHeaderView
+
+
 from PyQt6.QtWidgets import QDialog, QFormLayout, QLineEdit, QComboBox, QPushButton
 from PyQt6.QtGui import QPixmap, QFont,QImage
 from PyQt6.QtCore import Qt, QDate
@@ -137,11 +141,7 @@ class UserPage(QWidget):
 
     def setup_table(self):
         table = QTableWidget()
-<<<<<<< HEAD
         table.setColumnCount(16)  # Increase column count by one for the checkbox
-=======
-        table.setColumnCount(15)  # Increase column count by one for the checkbox
->>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
         
         headers = [
             "Select", 
@@ -158,12 +158,9 @@ class UserPage(QWidget):
             "Duration", 
             "Advance\nPayment", 
             "Monthly\nInstallment", 
-<<<<<<< HEAD
             "Action",
             "View"
-=======
             "Action"
->>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
         ]
         
         tooltips = [
@@ -181,12 +178,9 @@ class UserPage(QWidget):
             "Duration", 
             "Advance Payment", 
             "Monthly Installment", 
-<<<<<<< HEAD
             "Action",
             "view"
-=======
             "Action"
->>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
         ]
 
         # Set horizontal header labels
@@ -221,27 +215,117 @@ class UserPage(QWidget):
         
         return table
 
+    # def load_sales(self,search_term=""):
+    #     """ Fetch product details from the sales table based on user_id and display them in the frontend table. """
+    #     self.connection = sqlite3.connect("pos_database.db")
 
-    def load_sales(self,search_term=""):
+    #     cursor = self.connection.cursor()
+    #     if self.user_id:
+    #         cursor.execute("SELECT client_cnic FROM sales WHERE id = ?", (self.user_id,))
+    #         result = cursor.fetchone()
+    #         if result:
+    #             client_cnic = result[0]
+    #     if self.invertr_id:  # If no CNIC found in sales, check inventory
+    #         cursor.execute("SELECT client_cnic FROM inventory WHERE id = ?", (self.invertr_id,))
+    #         result = cursor.fetchone()
+    #         if result:
+    #             client_cnic = result[0]
+    #     where_clause = f"WHERE client_cnic = ?"
+    #     params = [client_cnic]
+    #     if search_term:
+    #         where_clause += f" AND (client_name LIKE ? OR client_mobile LIKE ? OR chassis_no LIKE ? OR client_cnic LIKE ?)"
+    #         params.extend(['%' + search_term + '%'] * 4)  # Append search term for client_name, client_mobile, and chassis_no
+
+    #     # Query to fetch sales data
+    #     query_sales = f"""
+    #         SELECT client_name, client_mobile, client_cnic, chassis_no, 'None' AS purchase_price, sale_price,
+    #             sale_date, product_status, payment_method, remaining_amount, duration, advance_payment, 
+    #             monthly_installment
+    #         FROM sales 
+    #         {where_clause}
+    #         ORDER BY id DESC
+    #     """
+        
+    #     # Query to fetch inventory data
+    #     query_inventory = f"""
+    #         SELECT client_name, client_mobile, client_cnic, chassis_no, purchase_price, 'None' AS sale_price,
+    #             purchase_date, product_status, 'None' AS payment_method, 'None' AS remaining_amount, 
+    #             'None' AS duration, 'None' AS advance_payment, 'None' AS monthly_installment
+    #         FROM inventory 
+    #         {where_clause}
+    #         ORDER BY id DESC
+    #     """
+
+    #     # Execute queries with the CNIC as parameter and the search term
+    #     cursor.execute(query_sales, params)
+    #     records_sales = cursor.fetchall()
+    #     cursor.execute(query_inventory, params)
+    #     records_inventory = cursor.fetchall()
+
+    #     # Store all records (sales + inventory) in the local variable
+    #     all_records = records_sales + records_inventory
+    #     self.connection.close()
+    #     self.table.setRowCount(0)  
+    #     if all_records:
+    #         self.table.setRowCount(len(all_records)) 
+    #         for row_idx, row_data in enumerate(all_records):
+    #             checkbox = QTableWidgetItem()
+    #             checkbox.setCheckState(Qt.CheckState.Unchecked)
+    #             self.table.setItem(row_idx, 0, checkbox)
+
+    #             for col_idx, col_data in enumerate(row_data):
+    #                 item = QTableWidgetItem(str(col_data))
+    #                 self.table.setItem(row_idx, col_idx + 1, item)
+    #             if row_data[8] not in [None,'None','','net cash','Net Cash','NET CASH']:
+    #                 manage_btn = QPushButton("Manage")
+    #                 manage_btn.clicked.connect(lambda _, sale_id=row_data[3] : self.open_new_sale_dialog(sale_id))
+    #                 self.table.setCellWidget(row_idx, 14, manage_btn)
+                    
+    #                 view_btn = QPushButton("View")
+    #                 view_btn.clicked.connect(lambda _, chassis_no=row_data[3]: self.open_installment_page(chassis_no))
+    #                 self.table.setCellWidget(row_idx, 15, view_btn)
+
+    #     self.connection.close()
+    def load_sales(self, search_term=""):
         """ Fetch product details from the sales table based on user_id and display them in the frontend table. """
         self.connection = sqlite3.connect("pos_database.db")
-
         cursor = self.connection.cursor()
+
+        client_cnic = None  # Initialize client_cnic
+
+        # Fetch CNIC from sales table
         if self.user_id:
             cursor.execute("SELECT client_cnic FROM sales WHERE id = ?", (self.user_id,))
             result = cursor.fetchone()
             if result:
                 client_cnic = result[0]
-        if self.invertr_id:  # If no CNIC found in sales, check inventory
+
+        # If no valid CNIC found in sales, check inventory for CNIC
+        if (not client_cnic or client_cnic == "0") and self.invertr_id:
             cursor.execute("SELECT client_cnic FROM inventory WHERE id = ?", (self.invertr_id,))
             result = cursor.fetchone()
             if result:
                 client_cnic = result[0]
-        where_clause = f"WHERE client_cnic = ?"
-        params = [client_cnic]
+
+        # Fallback to client name if CNIC is invalid or zero
+        if not client_cnic or client_cnic == "0":
+            cursor.execute("SELECT client_name FROM inventory WHERE id = ?", (self.invertr_id,))
+            result = cursor.fetchone()
+            if result:
+                client_name = result[0]
+                where_clause = "WHERE client_name = ?"
+                params = [client_name]
+            else:
+                # Handle the case where no client_name could be found
+                self.connection.close()
+                return  # Exit the function as no valid identifier is available
+        else:
+            where_clause = "WHERE client_cnic = ?"
+            params = [client_cnic]
+
         if search_term:
-            where_clause += f" AND (client_name LIKE ? OR client_mobile LIKE ? OR chassis_no LIKE ? OR client_cnic LIKE ?)"
-            params.extend(['%' + search_term + '%'] * 4)  # Append search term for client_name, client_mobile, and chassis_no
+            where_clause += " AND (client_name = ? OR client_mobile = ? OR chassis_no = ? OR client_cnic = ?)"
+            params.extend([search_term] * 4)  # Use exact search term for each field
 
         # Query to fetch sales data
         query_sales = f"""
@@ -249,14 +333,10 @@ class UserPage(QWidget):
                 sale_date, product_status, payment_method, remaining_amount, duration, advance_payment, 
                 monthly_installment
             FROM sales 
-<<<<<<< HEAD
             {where_clause}
             ORDER BY id DESC
-=======
-            {where_clause} ORDER BY id DESC
->>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
         """
-        
+
         # Query to fetch inventory data
         query_inventory = f"""
             SELECT client_name, client_mobile, client_cnic, chassis_no, purchase_price, 'None' AS sale_price,
@@ -267,13 +347,13 @@ class UserPage(QWidget):
             ORDER BY id DESC
         """
 
-        # Execute queries with the CNIC as parameter and the search term
+        # Execute queries
         cursor.execute(query_sales, params)
         records_sales = cursor.fetchall()
         cursor.execute(query_inventory, params)
         records_inventory = cursor.fetchall()
 
-        # Store all records (sales + inventory) in the local variable
+        # Combine and display all records
         all_records = records_sales + records_inventory
         self.connection.close()
         self.table.setRowCount(0)  
@@ -287,9 +367,9 @@ class UserPage(QWidget):
                 for col_idx, col_data in enumerate(row_data):
                     item = QTableWidgetItem(str(col_data))
                     self.table.setItem(row_idx, col_idx + 1, item)
-                if row_data[8] not in [None,'None','','net cash','Net Cash','NET CASH']:
+                if row_data[8] not in [None, 'None', '', 'net cash', 'Net Cash', 'NET CASH']:
                     manage_btn = QPushButton("Manage")
-                    manage_btn.clicked.connect(lambda _, sale_id=row_data[3] : self.open_new_sale_dialog(sale_id))
+                    manage_btn.clicked.connect(lambda _, sale_id=row_data[3]: self.open_new_sale_dialog(sale_id))
                     self.table.setCellWidget(row_idx, 14, manage_btn)
                     
                     view_btn = QPushButton("View")
@@ -297,6 +377,7 @@ class UserPage(QWidget):
                     self.table.setCellWidget(row_idx, 15, view_btn)
 
         self.connection.close()
+
 
     def delete_selected_sale(self):
         # import pdb;pdb.set_trace()
@@ -479,17 +560,14 @@ class NewSaleDialog(QDialog):
         self.monthly_installment.setReadOnly(True)
 
         self.remaining_amount = QLineEdit()
-<<<<<<< HEAD
+
         self.remaining_amount.setText(str(int(remaining_amount)))  # Convert to integer
 
         self.payment_no = QLineEdit()
 
-        # Setup layout
-=======
         self.remaining_amount.setText(str(remaining_amount))
         self.remaining_amount.setReadOnly(True)
         self.payment_no = QLineEdit()
->>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
         layout.addRow("Chassis No:", self.chassis_no)
         layout.addRow("Client Name:", self.client_name)
         layout.addRow("Duration (Months):", self.duration)

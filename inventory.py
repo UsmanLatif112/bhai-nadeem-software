@@ -269,7 +269,7 @@ class AddInventoryDialog(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Add New Inventory")
-        self.setGeometry(300, 300, 400, 350)
+        self.setGeometry(300, 300, 400, 300)
         layout = QFormLayout(self)
 
         self.bike_name = QLineEdit()
@@ -316,21 +316,75 @@ class AddInventoryDialog(QDialog):
                 (self.bike_name.text(), self.bike_model.text(), self.chassis_no.text(), self.reg_no.text(), self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.purchase_date.date().toString("yyyy-MM-dd"), purchase_price)
             )
             sales_id_data = cursor.lastrowid 
-            # Check if user already exists in the users table
-            user_exists = cursor.execute(
-                "SELECT EXISTS(SELECT 1 FROM usersmanagement WHERE client_cnic = ?)",
-                (self.client_cnic.text(),)
-            ).fetchone()[0]
-            if user_exists:
-                cursor.execute(
-                    "UPDATE usersmanagement SET inverted_id = ? WHERE client_cnic = ?",
-                    (sales_id_data, self.client_cnic.text())
-                )
+            cnic = self.client_cnic.text().strip()
+            name = self.client_name.text().strip()
+
+            if not cnic or cnic == "0":
+                # CNIC is empty or zero, match by NAME
+                name_exists = cursor.execute(
+                    "SELECT EXISTS(SELECT 1 FROM usersmanagement WHERE client_name = ?)",
+                    (name,)
+                ).fetchone()[0]
+
+                if name_exists:
+                    # Name exists, update date
+                    cursor.execute(
+                        "UPDATE usersmanagement SET date = ? WHERE client_name = ?",
+                        (self.purchase_date.date().toString("yyyy-MM-dd"), name)
+                    )
+                else:
+                    # Name does not exist, insert new record
+                    cursor.execute(
+                        "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date, inverted_id) VALUES (?, ?, ?, ?, ?)",
+                        (
+                            name,
+                            self.client_mobile.text(),
+                            cnic,
+                            self.purchase_date.date().toString("yyyy-MM-dd"),
+                            sales_id_data
+                        )
+                    )
             else:
-                cursor.execute(
-                    "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date, inverted_id) VALUES (?, ?, ?, ?, ?)",
-                    (self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.purchase_date.date().toString("yyyy-MM-dd"), sales_id_data)
-                )
+                # CNIC is provided, match by CNIC
+                user_exists = cursor.execute(
+                    "SELECT EXISTS(SELECT 1 FROM usersmanagement WHERE client_cnic = ?)",
+                    (cnic,)
+                ).fetchone()[0]
+
+                if user_exists:
+                    # CNIC exists, update inverted_id
+                    cursor.execute(
+                        "UPDATE usersmanagement SET inverted_id = ? WHERE client_cnic = ?",
+                        (sales_id_data, cnic)
+                    )
+                else:
+                    # CNIC does not exist, insert new record
+                    cursor.execute(
+                        "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date, inverted_id) VALUES (?, ?, ?, ?, ?)",
+                        (
+                            name,
+                            self.client_mobile.text(),
+                            cnic,
+                            self.purchase_date.date().toString("yyyy-MM-dd"),
+                            sales_id_data
+                        )
+                    )
+
+            # Check if user already exists in the users table
+            # user_exists = cursor.execute(
+            #     "SELECT EXISTS(SELECT 1 FROM usersmanagement WHERE client_cnic = ?)",
+            #     (self.client_cnic.text(),)
+            # ).fetchone()[0]
+            # if user_exists:
+            #     cursor.execute(
+            #         "UPDATE usersmanagement SET inverted_id = ? WHERE client_cnic = ?",
+            #         (sales_id_data, self.client_cnic.text())
+            #     )
+            # else:
+            #     cursor.execute(
+            #         "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date, inverted_id) VALUES (?, ?, ?, ?, ?)",
+            #         (self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.purchase_date.date().toString("yyyy-MM-dd"), sales_id_data)
+            #     )
     
             conn.commit()
             QMessageBox.information(self, "Success", "Inventory and User updated successfully!")
