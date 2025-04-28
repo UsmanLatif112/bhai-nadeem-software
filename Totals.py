@@ -114,24 +114,40 @@ class TotalsPage(QMainWindow):
 
     def setup_table(self):
         table = QTableWidget()
-        table.setColumnCount(10)
+        table.setColumnCount(11)
         headers = [
-            "Total Purchase", "Purchase Price", "Total Sales", "Sales Price","Total Profit", "Total Expenses","Expense Amount","Profit\nAfter Expense", "Total\nRemaining Amount", "Total Cash"
+            "Total\nPurchase Count",
+            "Total\nPurchase Price",
+            "Total\nSales Count",
+            "Total Sales\nSum",
+            "Total Profit",
+            "Total\nExpenses Count",
+            "Total\nExpenses Sum",
+            "Profit\nAfter Expense",
+            "Total\nRemaining Amount",
+            "Cash\nIn Hand",
+            "Total Cash\nAfter Remaining"
         ]
-        
-        # Set the horizontal header labels
+        tooltips = [
+            "Number of purchases (inventory items bought) in this period",
+            "Sum of all purchase prices",
+            "Number of sales in this period",
+            "Sum of all sales prices",
+            "Total profit (sales sum minus purchase prices)",
+            "Number of expenses recorded in this period",
+            "Sum of all expenses in this period",
+            "Profit after deducting expenses from profit",
+            "Sum of amounts still to be received from sales",
+            "Cash in hand (total sales sum - expenses)",
+            "Total sales after subtracting remaining amount (cash in hand - remaining)"
+        ]
         table.setHorizontalHeaderLabels(headers)
-
-        # Set tooltips for each header item
-        for i in range(len(headers)):
-            item = QTableWidgetItem(headers[i])
-            # item.setToolTip(tooltips[i])  # Set tooltip for the column header
+        for i, (header, tip) in enumerate(zip(headers, tooltips)):
+            item = QTableWidgetItem(header)
+            item.setToolTip(tip)
             table.setHorizontalHeaderItem(i, item)
-
-        # Get the horizontal header
         header = table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-
         table.setStyleSheet("""
             QTableWidget {
                 background-color: white;
@@ -146,11 +162,12 @@ class TotalsPage(QMainWindow):
                 font-weight: bold;
             }
         """)
-
         table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)  # Correct way to disable selection
-
+        table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
         return table
+
+
+
     
     def create_search_bar(self):
         layout = QHBoxLayout()
@@ -293,98 +310,119 @@ class TotalsPage(QMainWindow):
         else:
             self.date_picker_start.setEnabled(False)
             self.date_picker_end.setEnabled(False)
-
-   
+            
+            
+            
     def load_totals(self):
         conn = sqlite3.connect("pos_database.db")
         cursor = conn.cursor()
 
         selected_filter = self.filter_dropdown.currentText()
-        today = QDate.currentDate().toString("yyyy-MM-dd")  # Manually format it
+        today = QDate.currentDate().toString("yyyy-MM-dd")
 
         if selected_filter == "Today":
-            inventory_condition = f"DATE(purchase_date) = '{today}'"
             sales_condition = f"DATE(sale_date) = '{today}'"
+            inventory_condition = f"DATE(purchase_date) = '{today}'"
             expense_condition = f"DATE(expense_date) = '{today}'"
         elif selected_filter == "7 Days":
-            inventory_condition = f"DATE(purchase_date) >= DATE('{today}', '-7 days')"
             sales_condition = f"DATE(sale_date) >= DATE('{today}', '-7 days')"
+            inventory_condition = f"DATE(purchase_date) >= DATE('{today}', '-7 days')"
             expense_condition = f"DATE(expense_date) >= DATE('{today}', '-7 days')"
         elif selected_filter == "1 Month":
             start_date = QDate.currentDate().addMonths(-1).toString("yyyy-MM-dd")
-            inventory_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{today}'"
             sales_condition = f"DATE(sale_date) BETWEEN '{start_date}' AND '{today}'"
+            inventory_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{today}'"
             expense_condition = f"DATE(expense_date) BETWEEN '{start_date}' AND '{today}'"
         elif selected_filter == "3 Months":
             start_date = QDate.currentDate().addMonths(-3).toString("yyyy-MM-dd")
-            inventory_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{today}'"
             sales_condition = f"DATE(sale_date) BETWEEN '{start_date}' AND '{today}'"
+            inventory_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{today}'"
             expense_condition = f"DATE(expense_date) BETWEEN '{start_date}' AND '{today}'"
         elif selected_filter == "6 Months":
             start_date = QDate.currentDate().addMonths(-6).toString("yyyy-MM-dd")
-            inventory_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{today}'"
             sales_condition = f"DATE(sale_date) BETWEEN '{start_date}' AND '{today}'"
+            inventory_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{today}'"
             expense_condition = f"DATE(expense_date) BETWEEN '{start_date}' AND '{today}'"
         elif selected_filter == "12 Months":
             start_date = QDate.currentDate().addMonths(-12).toString("yyyy-MM-dd")
-            inventory_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{today}'"
             sales_condition = f"DATE(sale_date) BETWEEN '{start_date}' AND '{today}'"
+            inventory_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{today}'"
             expense_condition = f"DATE(expense_date) BETWEEN '{start_date}' AND '{today}'"
         elif selected_filter == "Custom":
             start_date = self.date_picker_start.date().toString("yyyy-MM-dd")
             end_date = self.date_picker_end.date().toString("yyyy-MM-dd")
-            inventory_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{end_date}'"
             sales_condition = f"DATE(sale_date) BETWEEN '{start_date}' AND '{end_date}'"
+            inventory_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{end_date}'"
             expense_condition = f"DATE(expense_date) BETWEEN '{start_date}' AND '{end_date}'"
         else:
-            inventory_condition = "1=1"
             sales_condition = "1=1"
+            inventory_condition = "1=1"
             expense_condition = "1=1"
 
-        # Execute SQL Queries
-        inventory_query = f"SELECT COUNT(*), COALESCE(SUM(purchase_price), 0) FROM inventory WHERE {inventory_condition}"
-        sales_query = f"SELECT COUNT(*), COALESCE(SUM(sale_price), 0),COALESCE(SUM(profit), 0), COALESCE(SUM(remaining_amount), 0) FROM sales WHERE {sales_condition}"
-        expense_query = f"SELECT COUNT(*), COALESCE(SUM(expense_price), 0) FROM expense WHERE {expense_condition}"
-        # total_profit = f"SELECT COUNT(*), COALESCE(SUM(profit), 0), COALESCE(SUM(remaining_amount), 0) FROM sales WHERE {sales_condition}"
-        cursor.execute(inventory_query)
-        total_purchase, purchase_price = cursor.fetchone()
+        # Purchases
+        cursor.execute(f"SELECT COUNT(*), COALESCE(SUM(purchase_price), 0) FROM inventory WHERE {inventory_condition}")
+        total_purchase_count, total_purchase_price = cursor.fetchone()
 
-        cursor.execute(sales_query)
-        total_sales, sales_price, total_profit, remaining_amount = cursor.fetchone()
+        # Sales
+        cursor.execute(f"""
+            SELECT
+                COUNT(*),                        -- Sales count
+                COALESCE(SUM(sale_price), 0),    -- Total sales sum
+                COALESCE(SUM(remaining_amount), 0) -- Total remaining amount
+            FROM sales
+            WHERE {sales_condition}
+        """)
+        total_sales_count, total_sales_sum, total_remaining_amount = cursor.fetchone()
 
-        cursor.execute(expense_query)
-        total_expenses, expense_amount = cursor.fetchone()
+        # Expenses (count and sum)
+        cursor.execute(f"SELECT COUNT(*), COALESCE(SUM(expense_price), 0) FROM expense WHERE {expense_condition}")
+        total_expenses_count, total_expenses_sum = cursor.fetchone()
 
-        # # Calculate Profit
-        # total_profit = purchase_price- sales_price
-        current_profit = total_profit - expense_amount
-        total_total = sales_price - remaining_amount
-        total_cash = total_total - expense_amount
-        
-        # Close the connection etc.
-        conn.close()
+        # Profit
+        total_profit = total_sales_sum - total_purchase_price
 
+        # Cash in Hand (Total Sales - Expenses)
+        cash_in_hand = total_sales_sum - total_expenses_sum
 
-        # Populate Table
+        # Total Sales After Remaining Amount (Cash in Hand - Remaining)
+        total_sales_after_remaining = cash_in_hand - total_remaining_amount
+
+        # Profit after expense
+        profit_after_expense = total_profit - total_expenses_sum
+
+        values = [
+            int(total_purchase_count),            # Total Purchase Count
+            int(total_purchase_price),            # Total Purchase Price
+            int(total_sales_count),               # Total Sales Count
+            int(total_sales_sum),                 # Total Sales Sum
+            int(total_profit),                    # Total Profit
+            int(total_expenses_count),            # Total Expenses Count
+            int(total_expenses_sum),              # Total Expenses Sum
+            int(profit_after_expense),            # Profit After Expense
+            int(total_remaining_amount),          # Total Remaining Amount
+            int(cash_in_hand),                    # Cash In Hand
+            int(total_sales_after_remaining)      # Total Sales After Remaining Amount
+        ]
+
+        cell_tooltips = [
+            "Number of purchases = ",
+            "Sum of Purchase prices = ",
+            "Number of sales = ",
+            "Sum of all sales prices = ",
+            "Total profit (sales sum - purchase prices) = ",
+            "Number of expenses = ",
+            "Sum of all expenses = ",
+            "Profit after deducting expenses = ",
+            "Sum of Remaining amounts = ",
+            "Cash in hand (total sales sum - expenses) = ",
+            "Total sales after subtracting remaining (cash in hand - remaining) = "
+        ]
+
         self.table.setRowCount(1)
-
-        def create_centered_item(value):
-            item = QTableWidgetItem(str(int(value)))
+        for col, (value, tip) in enumerate(zip(values, cell_tooltips)):
+            item = QTableWidgetItem(str(value))
             item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            return item
+            item.setToolTip(f"{tip}{value}")
+            self.table.setItem(0, col, item)
 
-        self.table.setItem(0, 0, create_centered_item(total_purchase))
-        self.table.setItem(0, 1, create_centered_item(purchase_price))
-        self.table.setItem(0, 2, create_centered_item(total_sales))
-        self.table.setItem(0, 3, create_centered_item(sales_price))
-        self.table.setItem(0, 4, create_centered_item(total_profit))
-        self.table.setItem(0, 5, create_centered_item(total_expenses))
-        self.table.setItem(0, 6, create_centered_item(expense_amount))
-        self.table.setItem(0, 7, create_centered_item(current_profit))
-        self.table.setItem(0, 8, create_centered_item(remaining_amount))
-        self.table.setItem(0, 9, create_centered_item(total_cash))
-
-
-
-            
-                
+        conn.close()

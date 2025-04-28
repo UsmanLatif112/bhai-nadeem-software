@@ -167,62 +167,6 @@ class SalesPage(QWidget):
         layout.setContentsMargins(0, 0, 20, 20)
 
         return layout
-# <<<<<<< HEAD
-# =======
-    
-    # def setup_table(self):
-    #     table = QTableWidget()
-    #     table.setColumnCount(15)
-    #     table.setHorizontalHeaderLabels([
-    #         "Select", "Client\nName", "Client\nCNIC", "Client Mobile\nNo", "Chassis No", 
-    #         "Sale\nPrice", "Purchase\nPrice", "Sale\nDate", "Profit", "Payment\nMethod",
-    #         "Remaining\nAmount", "Duration", "Advance\nPayment", "Monthly\nInstallment", "Status"
-    #     ])
-        
-    #     # Set tooltips for headers
-    #     header_labels = [
-    #         "Select", "Client\nName", "Client\nCNIC", "Client Mobile\nNo", "Chassis No", 
-    #         "Sale\nPrice", "Purchase\nPrice", "Sale\nDate", "Profit", "Payment\nMethod",
-    #         "Remaining\nAmount", "Duration", "Advance\nPayment", "Monthly\nInstallment", "Status"
-    #     ]
-        
-    #     for i, label in enumerate(header_labels):
-    #         item = table.horizontalHeaderItem(i)
-    #         if item is not None:
-    #             item.setToolTip(label)
-
-    #     header = table.horizontalHeader()
-    #     header.setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
-
-    #     # Set specific widths for columns to avoid bottom scrollbar
-    #     column_widths = [50, 120, 100, 100, 100, 100, 100, 100, 100, 120, 120, 80, 120, 120, 100]
-    #     for i, width in enumerate(column_widths):
-    #         header.resizeSection(i, width)
-
-    #     # Set the item delegate for the header
-    #     table.setItemDelegateForColumn(0, HeaderDelegate())
-
-    #     table.setStyleSheet("""
-    #         QTableWidget {
-    #             background-color: white;
-    #             gridline-color: #004d00;
-    #             font-size: 14px;
-    #             color: black;
-    #             margin: 10px;
-    #         } 
-    #         QHeaderView::section {
-    #             background-color: #004d00;
-    #             color: white;
-    #             font-weight: bold;
-    #             padding: 5px;  /* Padding for better visual appearance */
-    #         }
-    #     """)
-        
-    #     table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-    #     table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
-        
-    #     return table
-# >>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
 
     def setup_table(self):
         table = QTableWidget()
@@ -272,33 +216,6 @@ class SalesPage(QWidget):
         
         return table
 
-# <<<<<<< HEAD
-# =======
-
-
-
-    # def load_sales(self, search_term=""):
-    #     self.connection = sqlite3.connect("pos_database.db")
-    #     cursor = self.connection.cursor()
-    #     query = """
-    #         SELECT client_name, client_cnic, client_mobile, chassis_no, sale_price, 
-    #             purchase_price, sale_date, profit, payment_method, remaining_amount, 
-    #             duration, advance_payment, monthly_installment, product_status 
-    #         FROM sales
-    #         WHERE client_name LIKE ? OR client_cnic LIKE ? OR client_mobile LIKE ? OR chassis_no LIKE ?
-    #     """
-    #     cursor.execute(query, ('%'+search_term+'%',)*4)
-    #     records = cursor.fetchall()
-    #     self.table.setRowCount(len(records))
-    #     for row_idx, row_data in enumerate(records):
-    #         checkbox = QTableWidgetItem()
-    #         checkbox.setCheckState(Qt.CheckState.Unchecked)
-    #         self.table.setItem(row_idx, 0, checkbox)
-    #         for col_idx, col_data in enumerate(row_data):
-    #             self.table.setItem(row_idx, col_idx + 1, QTableWidgetItem(str(col_data)))
-    #     self.connection.close()
-
-# >>>>>>> 11ebf40c39abf7018a5c04b8664b45afa9ce7f37
     def load_sales(self, search_term=""):
         self.connection = sqlite3.connect("pos_database.db")
         cursor = self.connection.cursor()
@@ -312,16 +229,32 @@ class SalesPage(QWidget):
         cursor.execute(query, ('%'+search_term+'%',)*4)
         records = cursor.fetchall()
         self.table.setRowCount(len(records))
+
+        # Tooltip prefixes for each column (excluding the checkbox column)
+        tooltip_prefixes = [
+            "Client Name: ", "Client CNIC: ", "Client MobileNo: ", "Chassis No: ",
+            "Sale Price: ", "Purchase Price: ", "Sale Date: ", "Profit: ", "Payment Method: ",
+            "Remaining Amount: ", "Duration: ", "Advance Payment: ", "Monthly Installment: ", "Status: "
+        ]
+
         for row_idx, row_data in enumerate(records):
+            # Checkbox in the first column
             checkbox = QTableWidgetItem()
             checkbox.setCheckState(Qt.CheckState.Unchecked)
-            self.table.setItem(row_idx, 0, checkbox)  # Add checkboxes to the first column
+            checkbox.setToolTip("Select this sale")
+            self.table.setItem(row_idx, 0, checkbox)
 
+            # Fill other columns with tooltips
             for col_idx, col_data in enumerate(row_data):
                 item = QTableWidgetItem(str(col_data))
-                self.table.setItem(row_idx, col_idx + 1, item)  # Fill other data
-        self.connection.close()
+                # Set descriptive tooltip for each cell
+                if col_idx < len(tooltip_prefixes):
+                    item.setToolTip(tooltip_prefixes[col_idx] + str(col_data))
+                else:
+                    item.setToolTip(str(col_data))
+                self.table.setItem(row_idx, col_idx + 1, item)  # +1 because 0 is checkbox
 
+        self.connection.close()
 
     def delete_selected_sale(self):
         conn = sqlite3.connect("pos_database.db")

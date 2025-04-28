@@ -6,8 +6,6 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QPixmap, QFont
 from PyQt6.QtCore import Qt
-# from users import UserManagementPage
-# from sales import SalesPage
 from user_data import UserPage
 import os,sys
 def resource_path(relative_path):
@@ -188,6 +186,38 @@ class UserManagement(QMainWindow):
 
         return table
 
+    # def load_users(self, search_term=""):
+    #     """
+    #     Fetch user data from `usersmanagement` table and populate the table,
+    #     searching by client_name, client_mobile, or client_cnic.
+    #     """
+    #     cursor = self.connection.cursor()
+    #     query = """
+    #         SELECT id,sales_id,inverted_id, client_name, client_mobile, client_cnic, date
+    #         FROM usersmanagement
+    #         WHERE client_name LIKE ? OR client_mobile LIKE ? OR client_cnic LIKE ? ORDER BY id DESC
+    #     """
+    #     like_input = f"%{search_term}%"
+    #     cursor.execute(query, (like_input, like_input, like_input))
+    #     records = cursor.fetchall()
+
+    #     self.table.setRowCount(len(records))
+    #     for row_index, (id,sales_id,inverted_id, name, mobile, cnic, date_str) in enumerate(records):
+    #         # Checkbox
+    #         checkbox_item = QTableWidgetItem()
+    #         checkbox_item.setCheckState(Qt.CheckState.Unchecked)
+    #         self.table.setItem(row_index, 0, checkbox_item)
+
+    #         # Data columns
+    #         self.table.setItem(row_index, 1, QTableWidgetItem(name))
+    #         self.table.setItem(row_index, 2, QTableWidgetItem(mobile))
+    #         self.table.setItem(row_index, 3, QTableWidgetItem(cnic))
+    #         self.table.setItem(row_index, 4, QTableWidgetItem(date_str))
+
+    #         # Manage Button
+    #         manage_btn = QPushButton("Manage")
+    #         manage_btn.clicked.connect(lambda checked, user_id=sales_id,invertr_id=inverted_id: self.manage_user(user_id,invertr_id))
+    #         self.table.setCellWidget(row_index, 5, manage_btn)
     def load_users(self, search_term=""):
         """
         Fetch user data from `usersmanagement` table and populate the table,
@@ -203,24 +233,46 @@ class UserManagement(QMainWindow):
         cursor.execute(query, (like_input, like_input, like_input))
         records = cursor.fetchall()
 
+        tooltips = [
+            "Select this user",
+            "User's full name",
+            "User's mobile phone number",
+            "User's CNIC number",
+            "Registration date",
+            "Open user management actions"
+        ]
+
         self.table.setRowCount(len(records))
-        for row_index, (id,sales_id,inverted_id, name, mobile, cnic, date_str) in enumerate(records):
+        for row_index, (id, sales_id, inverted_id, name, mobile, cnic, date_str) in enumerate(records):
             # Checkbox
             checkbox_item = QTableWidgetItem()
             checkbox_item.setCheckState(Qt.CheckState.Unchecked)
+            checkbox_item.setToolTip(tooltips[0])
             self.table.setItem(row_index, 0, checkbox_item)
 
-            # Data columns
-            self.table.setItem(row_index, 1, QTableWidgetItem(name))
-            self.table.setItem(row_index, 2, QTableWidgetItem(mobile))
-            self.table.setItem(row_index, 3, QTableWidgetItem(cnic))
-            self.table.setItem(row_index, 4, QTableWidgetItem(date_str))
+            # Data columns with tooltips
+            item_name = QTableWidgetItem(name)
+            item_name.setToolTip(f"{tooltips[1]}: {name}")
+            self.table.setItem(row_index, 1, item_name)
+
+            item_mobile = QTableWidgetItem(mobile)
+            item_mobile.setToolTip(f"{tooltips[2]}: {mobile}")
+            self.table.setItem(row_index, 2, item_mobile)
+
+            item_cnic = QTableWidgetItem(cnic)
+            item_cnic.setToolTip(f"{tooltips[3]}: {cnic}")
+            self.table.setItem(row_index, 3, item_cnic)
+
+            item_date = QTableWidgetItem(date_str)
+            item_date.setToolTip(f"{tooltips[4]}: {date_str}")
+            self.table.setItem(row_index, 4, item_date)
 
             # Manage Button
             manage_btn = QPushButton("Manage")
-            manage_btn.clicked.connect(lambda checked, user_id=sales_id,invertr_id=inverted_id: self.manage_user(user_id,invertr_id))
+            manage_btn.setToolTip(tooltips[5])
+            manage_btn.clicked.connect(lambda checked, user_id=sales_id, invertr_id=inverted_id: self.manage_user(user_id, invertr_id))
             self.table.setCellWidget(row_index, 5, manage_btn)
-        
+    
     # ------------------- SEARCH / MANAGE / DELETE ------------------- #
 
     def on_search(self, text):

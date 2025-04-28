@@ -125,22 +125,24 @@ class ExpensePage(QMainWindow):
         table = QTableWidget()
         table.setColumnCount(5)
         headers = [
-            "Select", "Expense", "Description", "Expense Price","Expense Date"
+            "Select", "Expense", "Description", "Expense Price", "Expense Date"
+        ]
+        tooltips = [
+            "Check to select this expense", 
+            "Expense name/type",
+            "Description/details of the expense",
+            "The price/amount of this expense",
+            "Date when the expense was made"
         ]
         
-        # Set the horizontal header labels
-        table.setHorizontalHeaderLabels(headers)
-
-        # Set tooltips for each header item
+        # Set the horizontal header labels and tooltips
         for i in range(len(headers)):
             item = QTableWidgetItem(headers[i])
-            # item.setToolTip(tooltips[i])  # Set tooltip for the column header
+            item.setToolTip(tooltips[i])
             table.setHorizontalHeaderItem(i, item)
 
-        # Get the horizontal header
         header = table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-
         table.setStyleSheet("""
             QTableWidget {
                 background-color: white;
@@ -155,11 +157,10 @@ class ExpensePage(QMainWindow):
                 font-weight: bold;
             }
         """)
-
         table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)  # Correct way to disable selection
-
+        table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
         return table
+
 
 
     
@@ -192,9 +193,7 @@ class ExpensePage(QMainWindow):
     def on_search(self):
         search_term = self.search_input.text()
         self.load_expense(search_term)
-        
-        
-        
+            
     def load_expense(self, search_term=None):
         try:
             with sqlite3.connect("pos_database.db") as conn:
@@ -213,25 +212,42 @@ class ExpensePage(QMainWindow):
                 records = cursor.fetchall()
                 self.table.setRowCount(len(records))
 
+                # Tooltips for columns
+                tooltips = [
+                    "Check to select this expense",
+                    "Expense name/type",
+                    "Description/details",
+                    "The price/amount of this expense",
+                    "Date when the expense was made"
+                ]
+
                 for index, row in enumerate(records):
                     expense_id = row[0]  # Store id
-                    
+
                     # Checkbox for selection
                     checkbox = QTableWidgetItem()
                     checkbox.setCheckState(Qt.CheckState.Unchecked)
+                    checkbox.setToolTip(tooltips[0])
                     self.table.setItem(index, 0, checkbox)
-                    
+
+                    # Set data and tooltip for each column
                     for col_index, data in enumerate(row[1:], 1):
                         if col_index == 3:  # Expense price column
-                            data = int(data) if float(data).is_integer() else data  # Remove .0 if whole number
+                            # Show as int if possible
+                            try:
+                                data = int(data) if float(data).is_integer() else data
+                            except Exception:
+                                pass
                         item = QTableWidgetItem(str(data))
                         item.setFlags(Qt.ItemFlag.ItemIsEnabled)
+                        # Tooltip for this cell
+                        item.setToolTip(f"{tooltips[col_index]}: {data}")
                         self.table.setItem(index, col_index, item)
 
-                    # Store expense_id in the last column (hidden)
+                    # If you want to store expense_id in a hidden column, uncomment below:
                     id_item = QTableWidgetItem(str(expense_id))
                     id_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
-                    id_item.setData(Qt.ItemDataRole.UserRole, expense_id)  # Store ID safely
+                    id_item.setData(Qt.ItemDataRole.UserRole, expense_id)
                     self.table.setItem(index, 5, id_item)  # Hidden ID
 
         except sqlite3.Error as e:

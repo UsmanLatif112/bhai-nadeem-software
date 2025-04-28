@@ -22,7 +22,7 @@ def initialize_db():
         )
     ''')
 
-    # Initialize the sales table
+    
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS sales (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,6 +42,7 @@ def initialize_db():
             profit REAL,
             purchase_price REAL,
             product_status TEXT DEFAULT 'Sold',
+            discount REAL DEFAULT 0,              -- <---- Add this line
             FOREIGN KEY (chassis_no) REFERENCES inventory(chassis_no)
         )
     ''')

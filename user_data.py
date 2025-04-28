@@ -215,77 +215,6 @@ class UserPage(QWidget):
         
         return table
 
-    # def load_sales(self,search_term=""):
-    #     """ Fetch product details from the sales table based on user_id and display them in the frontend table. """
-    #     self.connection = sqlite3.connect("pos_database.db")
-
-    #     cursor = self.connection.cursor()
-    #     if self.user_id:
-    #         cursor.execute("SELECT client_cnic FROM sales WHERE id = ?", (self.user_id,))
-    #         result = cursor.fetchone()
-    #         if result:
-    #             client_cnic = result[0]
-    #     if self.invertr_id:  # If no CNIC found in sales, check inventory
-    #         cursor.execute("SELECT client_cnic FROM inventory WHERE id = ?", (self.invertr_id,))
-    #         result = cursor.fetchone()
-    #         if result:
-    #             client_cnic = result[0]
-    #     where_clause = f"WHERE client_cnic = ?"
-    #     params = [client_cnic]
-    #     if search_term:
-    #         where_clause += f" AND (client_name LIKE ? OR client_mobile LIKE ? OR chassis_no LIKE ? OR client_cnic LIKE ?)"
-    #         params.extend(['%' + search_term + '%'] * 4)  # Append search term for client_name, client_mobile, and chassis_no
-
-    #     # Query to fetch sales data
-    #     query_sales = f"""
-    #         SELECT client_name, client_mobile, client_cnic, chassis_no, 'None' AS purchase_price, sale_price,
-    #             sale_date, product_status, payment_method, remaining_amount, duration, advance_payment, 
-    #             monthly_installment
-    #         FROM sales 
-    #         {where_clause}
-    #         ORDER BY id DESC
-    #     """
-        
-    #     # Query to fetch inventory data
-    #     query_inventory = f"""
-    #         SELECT client_name, client_mobile, client_cnic, chassis_no, purchase_price, 'None' AS sale_price,
-    #             purchase_date, product_status, 'None' AS payment_method, 'None' AS remaining_amount, 
-    #             'None' AS duration, 'None' AS advance_payment, 'None' AS monthly_installment
-    #         FROM inventory 
-    #         {where_clause}
-    #         ORDER BY id DESC
-    #     """
-
-    #     # Execute queries with the CNIC as parameter and the search term
-    #     cursor.execute(query_sales, params)
-    #     records_sales = cursor.fetchall()
-    #     cursor.execute(query_inventory, params)
-    #     records_inventory = cursor.fetchall()
-
-    #     # Store all records (sales + inventory) in the local variable
-    #     all_records = records_sales + records_inventory
-    #     self.connection.close()
-    #     self.table.setRowCount(0)  
-    #     if all_records:
-    #         self.table.setRowCount(len(all_records)) 
-    #         for row_idx, row_data in enumerate(all_records):
-    #             checkbox = QTableWidgetItem()
-    #             checkbox.setCheckState(Qt.CheckState.Unchecked)
-    #             self.table.setItem(row_idx, 0, checkbox)
-
-    #             for col_idx, col_data in enumerate(row_data):
-    #                 item = QTableWidgetItem(str(col_data))
-    #                 self.table.setItem(row_idx, col_idx + 1, item)
-    #             if row_data[8] not in [None,'None','','net cash','Net Cash','NET CASH']:
-    #                 manage_btn = QPushButton("Manage")
-    #                 manage_btn.clicked.connect(lambda _, sale_id=row_data[3] : self.open_new_sale_dialog(sale_id))
-    #                 self.table.setCellWidget(row_idx, 14, manage_btn)
-                    
-    #                 view_btn = QPushButton("View")
-    #                 view_btn.clicked.connect(lambda _, chassis_no=row_data[3]: self.open_installment_page(chassis_no))
-    #                 self.table.setCellWidget(row_idx, 15, view_btn)
-
-    #     self.connection.close()
     def load_sales(self, search_term=""):
         """ Fetch product details from the sales table based on user_id and display them in the frontend table. """
         self.connection = sqlite3.connect("pos_database.db")
@@ -339,9 +268,9 @@ class UserPage(QWidget):
 
         # Query to fetch inventory data
         query_inventory = f"""
-            SELECT client_name, client_mobile, client_cnic, chassis_no, purchase_price, 'None' AS sale_price,
-                purchase_date, product_status, 'None' AS payment_method, 'None' AS remaining_amount, 
-                'None' AS duration, 'None' AS advance_payment, 'None' AS monthly_installment
+            SELECT client_name, client_mobile, client_cnic, chassis_no, purchase_price, '0' AS sale_price,
+                purchase_date, product_status, 'None' AS payment_method, '0' AS remaining_amount, 
+                '0' AS duration, '0' AS advance_payment, '0' AS monthly_installment
             FROM inventory 
             {where_clause}
             ORDER BY id DESC
@@ -359,22 +288,50 @@ class UserPage(QWidget):
         self.table.setRowCount(0)  
         if all_records:
             self.table.setRowCount(len(all_records)) 
-            for row_idx, row_data in enumerate(all_records):
-                checkbox = QTableWidgetItem()
-                checkbox.setCheckState(Qt.CheckState.Unchecked)
-                self.table.setItem(row_idx, 0, checkbox)
+            tooltips = [
+            "Select",
+            "Client Name",
+            "Client Mobile No",
+            "Client CNIC",
+            "Bike Chassis No",
+            "Purchase Price",
+            "Sale Price",
+            "Date",
+            "Product Status",
+            "Payment Method",
+            "Remaining Amount",
+            "Duration",
+            "Advance Payment",
+            "Monthly Installment",
+            "Action",
+            "View"
+        ]
 
-                for col_idx, col_data in enumerate(row_data):
-                    item = QTableWidgetItem(str(col_data))
-                    self.table.setItem(row_idx, col_idx + 1, item)
-                if row_data[8] not in [None, 'None', '', 'net cash', 'Net Cash', 'NET CASH']:
-                    manage_btn = QPushButton("Manage")
-                    manage_btn.clicked.connect(lambda _, sale_id=row_data[3]: self.open_new_sale_dialog(sale_id))
-                    self.table.setCellWidget(row_idx, 14, manage_btn)
-                    
-                    view_btn = QPushButton("View")
-                    view_btn.clicked.connect(lambda _, chassis_no=row_data[3]: self.open_installment_page(chassis_no))
-                    self.table.setCellWidget(row_idx, 15, view_btn)
+        for row_idx, row_data in enumerate(all_records):
+            checkbox = QTableWidgetItem()
+            checkbox.setCheckState(Qt.CheckState.Unchecked)
+            checkbox.setToolTip(tooltips[0])
+            self.table.setItem(row_idx, 0, checkbox)
+
+            for col_idx, col_data in enumerate(row_data):
+                item = QTableWidgetItem(str(col_data))
+                # Assign tooltip, +1 because col 0 is checkbox
+                if (col_idx+1) < len(tooltips):
+                    # item.setToolTip(tooltips[col_idx+1])
+                    item.setToolTip(f"{tooltips[col_idx+1]}: {col_data}")
+
+                self.table.setItem(row_idx, col_idx+1, item)
+            # Set tooltips for action/view buttons as well
+            if row_data[8] not in [None, 'None', '', 'net cash', 'Net Cash', 'NET CASH']:
+                manage_btn = QPushButton("Manage")
+                manage_btn.setToolTip("Open payment management dialog")
+                manage_btn.clicked.connect(lambda _, sale_id=row_data[3]: self.open_new_sale_dialog(sale_id))
+                self.table.setCellWidget(row_idx, 14, manage_btn)
+                
+                view_btn = QPushButton("View")
+                view_btn.setToolTip("View installment page")
+                view_btn.clicked.connect(lambda _, chassis_no=row_data[3]: self.open_installment_page(chassis_no))
+                self.table.setCellWidget(row_idx, 15, view_btn)
 
         self.connection.close()
 
@@ -461,26 +418,35 @@ class UserPage(QWidget):
                 self.connection = sqlite3.connect("pos_database.db")
                 cursor = self.connection.cursor()
 
-                # Fetching bike information
                 chassis_no = row['Chassis No']
                 cursor.execute("SELECT bike_name, bike_model FROM inventory WHERE chassis_no = ?", (chassis_no,))
                 bike_data = cursor.fetchone()
                 bike_name = bike_data[0] if bike_data else "Unknown"
                 bike_model = bike_data[1] if bike_data else "Unknown"
 
-                # Fetching additional payment information
-                cursor.execute("SELECT add_payment FROM sales WHERE chassis_no = ?", (chassis_no,))
-                add_payment_data = cursor.fetchone()
-                add_payment = add_payment_data[0] if add_payment_data else "Unknown"
+                # Get latest payment for this chassis_no (from payments table)
+                cursor.execute("""
+                    SELECT payment_amount
+                    FROM payments
+                    WHERE chassis_no = ?
+                    ORDER BY payment_date DESC, id DESC
+                    LIMIT 1
+                """, (chassis_no,))
+                payment_row = cursor.fetchone()
+                add_payment = payment_row[0] if payment_row and payment_row[0] not in (None, '', 0, '0', 'None') else None
 
-                # Continue with painting process
+                # Get discount from sales table
+                cursor.execute("SELECT discount FROM sales WHERE chassis_no = ?", (chassis_no,))
+                discount_row = cursor.fetchone()
+                discount = discount_row[0] if discount_row and discount_row[0] not in (None, '', 0, '0', 'None') else None
+
                 painter.drawText(100, y_offset, f"User Name:  {row['Client Name']}")
                 y_offset += line_height
                 painter.drawText(100, y_offset, f"Mobile No:  {row['Mobile No']}")
                 y_offset += line_height
                 painter.drawText(100, y_offset, f"CNIC:        {row['CNIC']}")
                 y_offset += line_height
-                painter.drawText(100, y_offset, "-" * 50)  # Separator line
+                painter.drawText(100, y_offset, "-" * 50)
                 y_offset += line_height
                 painter.drawText(100, y_offset, f"Bike Name:  {bike_name}")
                 y_offset += line_height
@@ -488,7 +454,7 @@ class UserPage(QWidget):
                 y_offset += line_height
                 painter.drawText(100, y_offset, f"Chassis No:  {chassis_no}")
                 y_offset += line_height
-                painter.drawText(100, y_offset, "-" * 50)  # Separator line
+                painter.drawText(100, y_offset, "-" * 50)
                 y_offset += line_height
                 painter.drawText(100, y_offset, f"Sale Price:  {row['Sale Price']}")
                 y_offset += line_height
@@ -498,9 +464,15 @@ class UserPage(QWidget):
                 y_offset += line_height
                 painter.drawText(100, y_offset, f"Duration: {row['Duration']}")
                 y_offset += line_height
-                painter.drawText(100, y_offset, f"Add Payment: {add_payment}")
-                y_offset += line_height
-                painter.drawText(100, y_offset, "-" * 50)  # Separator line
+
+                if add_payment is not None:
+                    painter.drawText(100, y_offset, f"Add Payment: {add_payment}")
+                    y_offset += line_height
+                if discount is not None:
+                    painter.drawText(100, y_offset, f"Discount: {discount}")
+                    y_offset += line_height
+
+                painter.drawText(100, y_offset, "-" * 50)
                 y_offset += line_height
                 font.setBold(True)
                 painter.setFont(font)
@@ -509,8 +481,10 @@ class UserPage(QWidget):
                 painter.drawText(100, y_offset, "Ch Nadeem 03007582812, Ch Raheel 03007777221")
                 y_offset += line_height
 
-            painter.end()  # End the painting process
-            self.connection.close()  # Close the database connection
+                cursor.close()
+                self.connection.close()
+
+            painter.end()
 
 
     
@@ -542,108 +516,106 @@ class NewSaleDialog(QDialog):
     def __init__(self, chassis_no, client_name, monthly_installment, duration, remaining_amount, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Update Payments")
-        self.setGeometry(300, 200, 400, 200)
+        self.setGeometry(300, 200, 400, 250)
         layout = QFormLayout(self)
-        self.chassis_no = QLineEdit()
-        self.chassis_no.setText(chassis_no)
+
+        # Fields
+        self.chassis_no = QLineEdit(chassis_no)
         self.chassis_no.setReadOnly(True)
-        
         self.client_name = QLineEdit(client_name)
         self.client_name.setReadOnly(True)
-
         self.duration = QComboBox()
-        self.duration.addItems([str(i) for i in range(1, 13)])  # 1 to 12 months
+        self.duration.addItems([str(i) for i in range(1, 13)])
         self.duration.setCurrentText(str(duration))
-
-        self.monthly_installment = QLineEdit()
-        self.monthly_installment.setText(str(monthly_installment))
+        self.monthly_installment = QLineEdit(str(monthly_installment))
         self.monthly_installment.setReadOnly(True)
-
-        self.remaining_amount = QLineEdit()
-
-        self.remaining_amount.setText(str(int(remaining_amount)))  # Convert to integer
-
-        self.payment_no = QLineEdit()
-
-        self.remaining_amount.setText(str(remaining_amount))
+        self.remaining_amount = QLineEdit(str(int(remaining_amount)))
         self.remaining_amount.setReadOnly(True)
         self.payment_no = QLineEdit()
+        self.discount = QLineEdit()
+        self.discount.setPlaceholderText("Optional")
+
+        # Layout
         layout.addRow("Chassis No:", self.chassis_no)
         layout.addRow("Client Name:", self.client_name)
         layout.addRow("Duration (Months):", self.duration)
         layout.addRow("Monthly Installment:", self.monthly_installment)
         layout.addRow("Remaining Amount:", self.remaining_amount)
         layout.addRow("Add Payment:", self.payment_no)
+        layout.addRow("Discount:", self.discount)
 
-        # Save previous state for reset purposes
         self.remaining_amount_previous = int(remaining_amount)
-        self.monthly_installment_previous = str(monthly_installment)  # Save the initial monthly installment
+        self.monthly_installment_previous = str(monthly_installment)
 
-        # Connect changes in the payment field to the calculation method
         self.payment_no.textChanged.connect(self.calculate_installments)
+        self.discount.textChanged.connect(self.calculate_installments)
 
         self.submit_button = QPushButton("Update Payment")
         self.submit_button.clicked.connect(self.submit_sale)
         layout.addWidget(self.submit_button)
 
     def calculate_installments(self):
-        """Calculate the new remaining amount and update the monthly installment."""
+        """Update remaining and monthly installment, factoring in discount."""
         try:
             payment_text = self.payment_no.text()
             payment_amount = int(payment_text) if payment_text.strip() else 0
-            new_remaining_amount = self.remaining_amount_previous - payment_amount
+            discount_text = self.discount.text()
+            discount_amount = int(discount_text) if discount_text.strip() else 0
+
+            new_remaining_amount = self.remaining_amount_previous - payment_amount - discount_amount
             if new_remaining_amount < 0:
-                new_remaining_amount = 0  # Prevent negative remaining amounts
+                new_remaining_amount = 0
             self.remaining_amount.setText(str(new_remaining_amount))
-            
-            # Recalculate the monthly installment using integer division
+
             duration = int(self.duration.currentText())
             new_monthly_installment = new_remaining_amount // duration if duration > 0 else new_remaining_amount
-            
             self.monthly_installment.setText(str(new_monthly_installment))
         except ValueError:
-            # Reset to previous values if input is invalid
             self.remaining_amount.setText(str(self.remaining_amount_previous))
             self.monthly_installment.setText(self.monthly_installment_previous)
 
-
     def submit_sale(self):
-        print("Sale submitted with the following details:")
-        print(f"Chassis No: {self.chassis_no.text()}")
-        print(f"Duration: {self.duration.currentText()}")
-        print(f"Monthly Installment: {self.monthly_installment.text()}")
-        print(f"Remaining Amount: {self.remaining_amount.text()}")
-        self.accept()  # Close the dialog (consider using self.close() if not modal)
+        """Update payments and discount in database, and update profit as per new sale price."""
         payment_amount = float(self.payment_no.text()) if self.payment_no.text() else 0
+        discount_amount = float(self.discount.text()) if self.discount.text() else 0
         payment_date = QDate.currentDate().toString("yyyy-MM-dd")
         chassis_no = self.chassis_no.text()
         client_name = self.client_name.text()
         duration = int(self.duration.currentText())
         monthly_installment = float(self.monthly_installment.text())
-        remaining_amount = float(self.remaining_amount.text()) - payment_amount
+        remaining_amount = float(self.remaining_amount.text())
+
         try:
             connection = sqlite3.connect("pos_database.db")
             cursor = connection.cursor()
+            # Get current sale_price and purchase_price
+            cursor.execute("SELECT sale_price, purchase_price FROM sales WHERE chassis_no = ?", (chassis_no,))
+            result = cursor.fetchone()
+            sale_price = float(result[0]) if result and result[0] not in (None, '', 'None') else 0
+            purchase_price = float(result[1]) if result and result[1] not in (None, '', 'None') else 0
+
+            new_sale_price = sale_price - discount_amount
+            profit = new_sale_price - purchase_price
+
             cursor.execute("""
                 UPDATE sales
-                SET duration = ?, monthly_installment = ?, remaining_amount = ?
+                SET duration = ?, monthly_installment = ?, remaining_amount = ?, discount = ?, sale_price = ?, profit = ?
                 WHERE chassis_no = ?
-            """, (duration, monthly_installment, remaining_amount, chassis_no))
-            
+            """, (duration, monthly_installment, remaining_amount, discount_amount, new_sale_price, profit, chassis_no))
+
             cursor.execute("""
                 INSERT INTO payments (client_name, chassis_no, payment_amount, payment_date)
                 VALUES (?, ?, ?, ?)
             """, (client_name, chassis_no, payment_amount, payment_date))
-        
+
             connection.commit()
             connection.close()
-            QMessageBox.information(self, "Submitted", "Sale details and payment updated successfully.")
-            self.parent().load_sales()  # Reload sales data in parent window
-            self.accept()  # Close the dialog
-
+            QMessageBox.information(self, "Submitted", "Sale details, payment, discount, and profit updated successfully.")
+            self.parent().load_sales()
+            self.accept()
         except sqlite3.Error as e:
-            QMessageBox.warning(self, "Error", f"Failed to update sale details and record payment: {str(e)}")
-    # 
+            QMessageBox.warning(self, "Error", f"Failed to update sale details: {str(e)}")
+
 
 if __name__ == "__main__":
     app = QApplication([])

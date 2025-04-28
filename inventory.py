@@ -206,33 +206,48 @@ class InventoryPage(QMainWindow):
                 cursor = conn.cursor()
                 if search_term:
                     query = """
-                        SELECT id, bike_name, bike_model, chassis_no, reg_no, client_name,purchase_price, purchase_date, product_status FROM inventory
+                        SELECT id, bike_name, bike_model, chassis_no, reg_no, client_name, purchase_price, purchase_date, product_status FROM inventory
                         WHERE bike_name LIKE ? OR bike_model LIKE ? OR chassis_no LIKE ? OR reg_no LIKE ? OR client_name LIKE ? OR purchase_date LIKE ? OR product_status LIKE ? ORDER BY id DESC
                     """
                     search_term = f'%{search_term}%'
                     cursor.execute(query, (search_term,) * 7)
                 else:
                     query = """
-                        SELECT id, bike_name, bike_model, chassis_no, reg_no, client_name,purchase_price, purchase_date, product_status, purchase_price FROM inventory ORDER BY id DESC
+                        SELECT id, bike_name, bike_model, chassis_no, reg_no, client_name, purchase_price, purchase_date, product_status FROM inventory ORDER BY id DESC
                     """
                     cursor.execute(query)
 
                 records = cursor.fetchall()
                 self.table.setRowCount(len(records))
+
+                # Optional: column-specific tooltip prefix
+                tooltip_prefixes = [
+                    "ID: ", "Bike Name: ", "Bike Model: ", "Chassis No: ", "Reg No: ",
+                    "Client Name: ", "Purchase Price: ", "Purchase Date: ", "Status: "
+                ]
+
                 for index, row in enumerate(records):
-                    # Set up the checkbox for selection
+                    # Checkbox
                     checkbox = QTableWidgetItem()
                     checkbox.setCheckState(Qt.CheckState.Unchecked)
+                    checkbox.setToolTip("Select this row")
                     self.table.setItem(index, 0, checkbox)
-                    
-                    # Populate other data
+
+                    # Other columns
                     for col_index, data in enumerate(row, 1):
                         item = QTableWidgetItem(str(data))
-                        item.setFlags(Qt.ItemFlag.ItemIsEnabled)  # Ensure the item is not editable
+                        item.setFlags(Qt.ItemFlag.ItemIsEnabled)
+                        # Set tooltip with column-specific description
+                        if col_index - 1 < len(tooltip_prefixes):
+                            tooltip = tooltip_prefixes[col_index - 1] + str(data)
+                        else:
+                            tooltip = str(data)
+                        item.setToolTip(tooltip)
                         self.table.setItem(index, col_index, item)
 
         except sqlite3.Error as e:
             QMessageBox.critical(self, "Database Error", f"An error occurred: {e}")
+
 
     def check_purchase_price_validity(self):
         """ Checks if the purchase price input is valid and shows a warning if not. """
