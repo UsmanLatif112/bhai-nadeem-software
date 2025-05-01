@@ -456,18 +456,32 @@ class UserPage(QWidget):
                 y_offset += line_height
                 painter.drawText(100, y_offset, "-" * 50)
                 y_offset += line_height
+                if row.get('Payment Method') not in (None, '', 'None'):
+                    painter.drawText(100, y_offset, f"Payment Method: {row['Payment Method']}")
+                    y_offset += line_height
+
                 painter.drawText(100, y_offset, f"Sale Price:  {row['Sale Price']}")
                 y_offset += line_height
-                painter.drawText(100, y_offset, f"Remaining Amount: {row['Remaining Amount']}")
-                y_offset += line_height
-                painter.drawText(100, y_offset, f"Monthly Installment: {row['Monthly Installment']}")
-                y_offset += line_height
-                painter.drawText(100, y_offset, f"Duration: {row['Duration']}")
-                y_offset += line_height
+                
+                # Remaining Amount
+                if row['Remaining Amount'] not in (None, '', '0', '0.0', 0, 0.0, 'None'):
+                    painter.drawText(100, y_offset, f"Remaining Amount: {row['Remaining Amount']}")
+                    y_offset += line_height
+
+                # Monthly Installment
+                if row['Monthly Installment'] not in (None, '', '0', '0.0', 0, 0.0, 'None'):
+                    painter.drawText(100, y_offset, f"Monthly Installment: {row['Monthly Installment']}")
+                    y_offset += line_height
+
+                # Duration
+                if row['Duration'] not in (None, '', '0', 0, 'None'):
+                    painter.drawText(100, y_offset, f"Duration: {row['Duration']}")
+                    y_offset += line_height
 
                 if add_payment is not None:
                     painter.drawText(100, y_offset, f"Add Payment: {add_payment}")
                     y_offset += line_height
+                    
                 if discount is not None:
                     painter.drawText(100, y_offset, f"Discount: {discount}")
                     y_offset += line_height
@@ -576,7 +590,12 @@ class NewSaleDialog(QDialog):
 
     def submit_sale(self):
         """Update payments and discount in database, and update profit as per new sale price."""
-        payment_amount = float(self.payment_no.text()) if self.payment_no.text() else 0
+        payment_text = self.payment_no.text().strip()
+        if not payment_text or float(payment_text) == 0:
+            QMessageBox.warning(self, "Input Error", "Please add a payment before submitting.")
+            return  # Prevents further execution
+
+        payment_amount = float(payment_text)
         discount_amount = float(self.discount.text()) if self.discount.text() else 0
         payment_date = QDate.currentDate().toString("yyyy-MM-dd")
         chassis_no = self.chassis_no.text()
@@ -615,6 +634,7 @@ class NewSaleDialog(QDialog):
             self.accept()
         except sqlite3.Error as e:
             QMessageBox.warning(self, "Error", f"Failed to update sale details: {str(e)}")
+
 
 
 if __name__ == "__main__":
