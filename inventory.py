@@ -9,6 +9,9 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QDateEdit
 from PyQt6.QtCore import QDate
 import os,sys
+from PyQt6.QtWidgets import QCompleter
+
+
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and frozen """
     try:
@@ -280,6 +283,8 @@ class InventoryPage(QMainWindow):
         self.load_inventory()
 
 
+
+
 class AddInventoryDialog(QDialog):
     def __init__(self):
         super().__init__()
@@ -298,7 +303,14 @@ class AddInventoryDialog(QDialog):
         self.purchase_date.setCalendarPopup(True)
         self.purchase_date.setDate(QDate.currentDate())
         self.purchase_date.setDisplayFormat("yyyy-MM-dd")
-        self.purchase_price = QLineEdit()  # Field for entering purchase price
+        self.purchase_price = QLineEdit()
+
+        # Set up completer for client name
+        client_names = self.get_client_names()
+        self.completer = QCompleter(client_names)
+        self.completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self.completer.setFilterMode(Qt.MatchFlag.MatchContains)
+        self.client_name.setCompleter(self.completer)
 
         layout.addRow("Bike Name:", self.bike_name)
         layout.addRow("Bike Model:", self.bike_model)
@@ -308,11 +320,26 @@ class AddInventoryDialog(QDialog):
         layout.addRow("Client Mobile:", self.client_mobile)
         layout.addRow("Client CNIC:", self.client_cnic)
         layout.addRow("Purchase Date", self.purchase_date)
-        layout.addRow("Purchase Price:", self.purchase_price)  # Add purchase price to the form
+        layout.addRow("Purchase Price:", self.purchase_price)
 
         self.submit_button = QPushButton("Add Inventory")
         self.submit_button.clicked.connect(self.add_inventory)
         layout.addWidget(self.submit_button)
+
+    def get_client_names(self):
+        conn = sqlite3.connect("pos_database.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT client_name FROM usersmanagement")
+        names = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        return names
+
+    def showEvent(self, event):
+        # Refresh completer with current names every time the dialog is shown
+        client_names = self.get_client_names()
+        self.completer.model().setStringList(client_names)
+        super().showEvent(event)
+
 
     def add_inventory(self):
         conn = sqlite3.connect("pos_database.db")

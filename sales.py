@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QPixmap, QFont, QTextOption
 from PyQt6.QtCore import Qt, QDate
 from PyQt6.QtGui import QPixmap, QFont
+from PyQt6.QtWidgets import QCompleter
 # <<<<<<< HEAD
 import os,sys
 def resource_path(relative_path):
@@ -318,6 +319,12 @@ class NewSaleDialog(QDialog):
 
         # Input fields
         self.client_name = QLineEdit()
+        self.client_name = QLineEdit()
+        client_names = self.get_client_names()
+        self.completer = QCompleter(client_names)
+        self.completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self.completer.setFilterMode(Qt.MatchFlag.MatchContains)
+        self.client_name.setCompleter(self.completer)
         self.client_mobile = QLineEdit()
         self.client_cnic = QLineEdit()
         self.chassis_no = QLineEdit()
@@ -425,13 +432,25 @@ class NewSaleDialog(QDialog):
             advance_payment = int(self.advance_cash.text() if self.advance_cash.text() else 0)  # Convert to integer
             months = int(self.duration.currentText())
             remaining = total_sale_price - advance_payment
-            monthly = int(remaining / months) if months else 0  # Calculate as integer
-            self.monthly_installment.setText(f"{monthly}")
-            self.remaining_amount.setText(f"{remaining}")
+            monthly = remaining / months if months else 0  # Calculate as float
+            self.monthly_installment.setText(f"{monthly:.0f}")
+            self.remaining_amount.setText(f"{remaining:.0f}")
         except ValueError:
             self.monthly_installment.clear()
             self.remaining_amount.clear()
+    def get_client_names(self):
+        conn = sqlite3.connect("pos_database.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT client_name FROM usersmanagement")
+        names = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        return names
 
+    def showEvent(self, event):
+        # Refresh completer with current names every time the dialog is shown
+        client_names = self.get_client_names()
+        self.completer.model().setStringList(client_names)
+        super().showEvent(event)
 
     def submit_sale(self):
         try:
