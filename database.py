@@ -30,6 +30,7 @@ def initialize_db():
             client_cnic TEXT,
             client_mobile TEXT,
             chassis_no TEXT,
+            invoice_number TEXT,
             sale_price REAL,
             purchase_date TEXT DEFAULT (DATE('now')),
             sale_date TEXT DEFAULT (DATE('now')),
@@ -42,6 +43,7 @@ def initialize_db():
             profit REAL,
             purchase_price REAL,
             product_status TEXT DEFAULT 'Sold',
+            installment_description TEXT,
             discount REAL DEFAULT 0,              -- <---- Add this line
             FOREIGN KEY (chassis_no) REFERENCES inventory(chassis_no)
         )

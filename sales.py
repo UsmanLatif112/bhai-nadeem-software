@@ -327,7 +327,14 @@ class NewSaleDialog(QDialog):
         self.client_name.setCompleter(self.completer)
         self.client_mobile = QLineEdit()
         self.client_cnic = QLineEdit()
+        self.invoice_number = QLineEdit()
+        # Chassis number autocomplete
         self.chassis_no = QLineEdit()
+        chassis_numbers = self.get_chassis_numbers()
+        self.chassis_completer = QCompleter(chassis_numbers)
+        self.chassis_completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self.chassis_completer.setFilterMode(Qt.MatchFlag.MatchContains)
+        self.chassis_no.setCompleter(self.chassis_completer)
         self.sale_price = QLineEdit()
         self.sale_date = QDateEdit()
         self.sale_date.setCalendarPopup(True)
@@ -350,11 +357,14 @@ class NewSaleDialog(QDialog):
         self.remaining_amount = QLineEdit()
         self.remaining_amount.setReadOnly(True)
         self.remaining_amount.setEnabled(False)
+        self.installment_description = QLineEdit()  # New Field
+        self.installment_description.setEnabled(False)
 
         # Adding widgets to the layout
         layout.addRow("Client Name:", self.client_name)
         layout.addRow("Client Mobile Number:", self.client_mobile)
         layout.addRow("Client CNIC:", self.client_cnic)
+        layout.addRow("Invoice Number:", self.invoice_number)
         layout.addRow("Chassis No:", self.chassis_no)
         layout.addRow("Purchase Price:", self.purchase_price)
         layout.addRow("Sale Price:", self.sale_price)
@@ -365,6 +375,7 @@ class NewSaleDialog(QDialog):
         layout.addRow("Duration (Months):", self.duration)
         layout.addRow("Monthly Installment:", self.monthly_installment)
         layout.addRow("Remaining Amount:", self.remaining_amount)
+        layout.addRow("Installment Description:", self.installment_description)  # New field here
 
         self.submit_button = QPushButton("Submit Sale")
         self.submit_button.clicked.connect(self.submit_sale)
@@ -421,11 +432,13 @@ class NewSaleDialog(QDialog):
         self.duration.setEnabled(checked)
         self.monthly_installment.setEnabled(checked)
         self.remaining_amount.setEnabled(checked)
+        self.installment_description.setEnabled(checked)
         if not checked:
             self.advance_cash.clear()
             self.duration.setCurrentIndex(0)
             self.monthly_installment.clear()
             self.remaining_amount.clear()
+            self.installment_description.clear()
 
     def calculate_installments(self):
         try:
@@ -446,11 +459,22 @@ class NewSaleDialog(QDialog):
         names = [row[0] for row in cursor.fetchall()]
         conn.close()
         return names
-
+    
+    def get_chassis_numbers(self):
+        conn = sqlite3.connect("pos_database.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT chassis_no FROM inventory WHERE product_status != 'Sold'")
+        chassis_numbers = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        return chassis_numbers
+    
     def showEvent(self, event):
         # Refresh completer with current names every time the dialog is shown
         client_names = self.get_client_names()
         self.completer.model().setStringList(client_names)
+        
+        chassis_numbers = self.get_chassis_numbers()
+        self.chassis_completer.model().setStringList(chassis_numbers)
         super().showEvent(event)
 
     def autofill_client_info(self):
@@ -502,23 +526,25 @@ class NewSaleDialog(QDialog):
         try:
             cursor = self.connection.cursor()
             cursor.execute(
-                "INSERT INTO sales (client_name, client_cnic, client_mobile, chassis_no, sale_price, sale_date, payment_method, duration, purchase_price, advance_payment, monthly_installment, profit, remaining_amount, product_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Sold')",
+                "INSERT INTO sales (client_name, client_cnic, client_mobile, chassis_no, invoice_number, sale_price, sale_date, payment_method, duration, purchase_price, advance_payment, monthly_installment, profit, remaining_amount, product_status, installment_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Sold', ?)",
                 (
                     self.client_name.text(),
                     self.client_cnic.text(),
                     self.client_mobile.text(),
                     self.chassis_no.text(),
+                    self.invoice_number.text(),
                     sale_price,
-                    self.sale_date.date().toString("yyyy-MM-dd"),  # Convert PyQt date to string
+                    self.sale_date.date().toString("yyyy-MM-dd"),
                     payment_method,
                     int(self.duration.currentText()) if self.installment_checkbox.isChecked() else 0,
-                    float(self.purchase_price.text()) if self.purchase_price.text() else 0,  # Ensure correct data type
+                    float(self.purchase_price.text()) if self.purchase_price.text() else 0,
                     advance_payment,
                     monthly_installment,
                     profit,
                     remaining_amount,
+                    self.installment_description.text() if self.installment_checkbox.isChecked() else "",
                 )
-                )
+            )
             sales_id_data = cursor.lastrowid 
             cursor.execute(
                 "UPDATE inventory SET product_status = 'Sold' WHERE chassis_no = ?",

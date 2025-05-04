@@ -141,13 +141,14 @@ class UserPage(QWidget):
 
     def setup_table(self):
         table = QTableWidget()
-        table.setColumnCount(16)  # Increase column count by one for the checkbox
+        table.setColumnCount(18)  # Increase column count by one for the checkbox
         
         headers = [
             "Select", 
             "Client\nName", 
             "Client\nMobile\nNo", 
-            "Client\nCNIC", 
+            "Client\nCNIC",
+            "Invoice\nNumber",
             "Bike\nChassis\nNo", 
             "Purchase\nPrice", 
             "Sale\nPrice", 
@@ -157,7 +158,8 @@ class UserPage(QWidget):
             "Remaining\nAmount", 
             "Duration", 
             "Advance\nPayment", 
-            "Monthly\nInstallment", 
+            "Monthly\nInstallment",
+            "Installment\nDescription",  
             "Action",
             "View"
             "Action"
@@ -167,7 +169,8 @@ class UserPage(QWidget):
            "Select", 
             "Client Name", 
             "Client Mobile No", 
-            "Client CNIC", 
+            "Client CNIC",
+            "Invoice Number", 
             "Bike Chassis No", 
             "Purchase Price", 
             "Sale Price", 
@@ -178,6 +181,7 @@ class UserPage(QWidget):
             "Duration", 
             "Advance Payment", 
             "Monthly Installment", 
+            "Installment Description", 
             "Action",
             "view"
             "Action"
@@ -216,6 +220,27 @@ class UserPage(QWidget):
         return table
 
     def load_sales(self, search_term=""):
+        headers = [
+            "Select",
+            "Client\nName",
+            "Client\nMobile\nNo",
+            "Client\nCNIC",
+            "Invoice\nNumber",           # sales only; blank for inventory
+            "Bike\nChassis\nNo",
+            "Purchase\nPrice",
+            "Sale\nPrice",
+            "Date",
+            "Product\nStatus",
+            "Payment\nMethod",
+            "Remaining\nAmount",
+            "Duration",
+            "Advance\nPayment",
+            "Monthly\nInstallment",
+            "Installment\nDescription",  # sales only; blank for inventory
+            "Action",
+            "View"
+        ]
+
         """ Fetch product details from the sales table based on user_id and display them in the frontend table. """
         self.connection = sqlite3.connect("pos_database.db")
         cursor = self.connection.cursor()
@@ -258,23 +283,51 @@ class UserPage(QWidget):
 
         # Query to fetch sales data
         query_sales = f"""
-            SELECT client_name, client_mobile, client_cnic, chassis_no, 'None' AS purchase_price, sale_price,
-                sale_date, product_status, payment_method, remaining_amount, duration, advance_payment, 
-                monthly_installment
+            SELECT 
+                client_name,           -- 0
+                client_mobile,         -- 1
+                client_cnic,           -- 2
+                invoice_number,        -- 3  (NEW)
+                chassis_no,            -- 4
+                purchase_price,        -- 5
+                sale_price,            -- 6
+                sale_date,             -- 7
+                product_status,        -- 8
+                payment_method,        -- 9
+                remaining_amount,      -- 10
+                duration,              -- 11
+                advance_payment,       -- 12
+                monthly_installment,   -- 13
+                installment_description-- 14 (NEW)
             FROM sales 
             {where_clause}
             ORDER BY id DESC
         """
 
+
         # Query to fetch inventory data
         query_inventory = f"""
-            SELECT client_name, client_mobile, client_cnic, chassis_no, purchase_price, '0' AS sale_price,
-                purchase_date, product_status, 'None' AS payment_method, '0' AS remaining_amount, 
-                '0' AS duration, '0' AS advance_payment, '0' AS monthly_installment
+            SELECT 
+                client_name,            -- 0
+                client_mobile,          -- 1
+                client_cnic,            -- 2
+                '' as invoice_number,   -- 3 <-- blank
+                chassis_no,             -- 4
+                purchase_price,         -- 5
+                '0' as sale_price,      -- 6
+                purchase_date,          -- 7
+                product_status,         -- 8
+                'None' as payment_method, -- 9
+                '0' as remaining_amount,  -- 10
+                '0' as duration,          -- 11
+                '0' as advance_payment,   -- 12
+                '0' as monthly_installment, -- 13
+                '' as installment_description -- 14 <-- blank
             FROM inventory 
             {where_clause}
             ORDER BY id DESC
         """
+
 
         # Execute queries
         cursor.execute(query_sales, params)
@@ -282,56 +335,62 @@ class UserPage(QWidget):
         cursor.execute(query_inventory, params)
         records_inventory = cursor.fetchall()
 
-        # Combine and display all records
+        # Combine records
         all_records = records_sales + records_inventory
         self.connection.close()
-        self.table.setRowCount(0)  
+        self.table.setRowCount(0)
+
         if all_records:
-            self.table.setRowCount(len(all_records)) 
+            self.table.setRowCount(len(all_records))
             tooltips = [
-            "Select",
-            "Client Name",
-            "Client Mobile No",
-            "Client CNIC",
-            "Bike Chassis No",
-            "Purchase Price",
-            "Sale Price",
-            "Date",
-            "Product Status",
-            "Payment Method",
-            "Remaining Amount",
-            "Duration",
-            "Advance Payment",
-            "Monthly Installment",
-            "Action",
-            "View"
-        ]
+                "Select",
+                "Client Name",
+                "Client Mobile No",
+                "Client CNIC",
+                "Invoice Number",
+                "Bike Chassis No",
+                "Purchase Price",
+                "Sale Price",
+                "Date",
+                "Product Status",
+                "Payment Method",
+                "Remaining Amount",
+                "Duration",
+                "Advance Payment",
+                "Monthly Installment",
+                "Installment Description",
+                "Action",
+                "View"
+            ]
 
-        for row_idx, row_data in enumerate(all_records):
-            checkbox = QTableWidgetItem()
-            checkbox.setCheckState(Qt.CheckState.Unchecked)
-            checkbox.setToolTip(tooltips[0])
-            self.table.setItem(row_idx, 0, checkbox)
+            for row_idx, row_data in enumerate(all_records):
+                checkbox = QTableWidgetItem()
+                checkbox.setCheckState(Qt.CheckState.Unchecked)
+                checkbox.setToolTip(tooltips[0])
+                self.table.setItem(row_idx, 0, checkbox)
 
-            for col_idx, col_data in enumerate(row_data):
-                item = QTableWidgetItem(str(col_data))
-                # Assign tooltip, +1 because col 0 is checkbox
-                if (col_idx+1) < len(tooltips):
-                    # item.setToolTip(tooltips[col_idx+1])
-                    item.setToolTip(f"{tooltips[col_idx+1]}: {col_data}")
+                # Populate columns 1-15 (from row_data[0] to row_data[14])
+                for col_idx in range(1, len(headers) - 2):  # up to Installment Description
+                    col_data = row_data[col_idx - 1]
+                    # Only show invoice_number (4) and installment_description (15) if not empty
+                    if col_idx in [4, 15]:  # Invoice Number, Installment Description
+                        col_data = col_data if col_data not in (None, "", 0, "0") else "None"
+                    item = QTableWidgetItem(str(col_data))
+                    if col_idx < len(tooltips):
+                        item.setToolTip(f"{tooltips[col_idx]}: {col_data}")
+                    self.table.setItem(row_idx, col_idx, item)
 
-                self.table.setItem(row_idx, col_idx+1, item)
             # Set tooltips for action/view buttons as well
-            if row_data[8] not in [None, 'None', '', 'net cash', 'Net Cash', 'NET CASH']:
+            if row_data[9] not in [None, 'None', '', 'net cash', 'Net Cash', 'NET CASH']:
                 manage_btn = QPushButton("Manage")
                 manage_btn.setToolTip("Open payment management dialog")
-                manage_btn.clicked.connect(lambda _, sale_id=row_data[3]: self.open_new_sale_dialog(sale_id))
-                self.table.setCellWidget(row_idx, 14, manage_btn)
-                
+                manage_btn.clicked.connect(lambda _, sale_id=row_data[4]: self.open_new_sale_dialog(sale_id))
+                self.table.setCellWidget(row_idx, 16, manage_btn)
+
                 view_btn = QPushButton("View")
                 view_btn.setToolTip("View installment page")
-                view_btn.clicked.connect(lambda _, chassis_no=row_data[3]: self.open_installment_page(chassis_no))
-                self.table.setCellWidget(row_idx, 15, view_btn)
+                view_btn.clicked.connect(lambda _, chassis_no=row_data[4]: self.open_installment_page(chassis_no))
+                self.table.setCellWidget(row_idx, 17, view_btn)
 
         self.connection.close()
 
@@ -350,37 +409,40 @@ class UserPage(QWidget):
         for row in range(self.table.rowCount()):
             checkbox_item = self.table.item(row, 0)  # Index 0 for checkbox column
             if checkbox_item.checkState() == Qt.CheckState.Checked:
-                # import pdb;pdb.set_trace()
-                client_name = self.table.item(row, 1).text()  # Client Name
-                mobile_no = self.table.item(row, 2).text()    # Mobile No
-                cnic = self.table.item(row, 3).text()          # CNIC
-                chassis_no = self.table.item(row, 4).text()    # Chassis No
-                sale_price = self.table.item(row, 5).text()    # Purchase Price
-                sale_price = self.table.item(row, 6).text()    # Sale Price
-                date = self.table.item(row, 7).text()           # Date
-                product_status = self.table.item(row, 8).text() # Product Status
-                payment_method = self.table.item(row, 9).text() # Product Status
-                remaining_Amount = self.table.item(row, 10).text() # Product Status
-                duration = self.table.item(row, 11).text() # Product Status
-                Monthly_Installment = self.table.item(row, 13).text() # Product Status
-                if len(selected_rows)==0:
+                client_name = self.table.item(row, 1).text()        # Client Name
+                mobile_no = self.table.item(row, 2).text()          # Mobile No
+                cnic = self.table.item(row, 3).text()               # CNIC
+                invoice_number = self.table.item(row, 4).text()     # Invoice Number
+                chassis_no = self.table.item(row, 5).text()         # Bike Chassis No
+                purchase_price = self.table.item(row, 6).text()     # Purchase Price
+                sale_price = self.table.item(row, 7).text()         # Sale Price
+                date = self.table.item(row, 8).text()               # Date
+                product_status = self.table.item(row, 9).text()     # Product Status
+                payment_method = self.table.item(row, 10).text()    # Payment Method
+                remaining_Amount = self.table.item(row, 11).text()  # Remaining Amount
+                duration = self.table.item(row, 12).text()          # Duration
+                advance_payment = self.table.item(row, 13).text()   # Advance Payment
+                Monthly_Installment = self.table.item(row, 14).text()  # Monthly Installment
+                # Only first checked row is collected
+                if len(selected_rows) == 0:
                     selected_rows.append({
                         "Client Name": client_name,
                         "Mobile No": mobile_no,
                         "CNIC": cnic,
+                        "Invoice Number": invoice_number,
                         "Chassis No": chassis_no,
+                        "Purchase Price": purchase_price,
                         "Sale Price": sale_price,
                         "Date": date,
                         "Product Status": product_status,
                         "Payment Method": payment_method,
                         "Remaining Amount": remaining_Amount,
                         "Duration": duration,
+                        "Advance Payment": advance_payment,
                         "Monthly Installment": Monthly_Installment
-
                     })
 
         if selected_rows:
-            # Call the show_print_preview function and pass selected_rows
             self.show_print_preview(selected_rows)
         else:
             QMessageBox.warning(self, "No Selection", "Please select at least one sale to print.")
@@ -398,22 +460,21 @@ class UserPage(QWidget):
             y_offset = 40
             line_height = 40
             
-            # Load the image specifically for this function
             logo_image_path = resource_path('BM_moters_b.png')
             logo_image = QImage(logo_image_path)
             if logo_image.isNull():
-                print("Failed to load image for printing:", logo_image_path)  # Debug output
+                print("Failed to load image for printing:", logo_image_path)
                 return
             
             logo_width = 500
             logo_height = 50
-            # Draw the image
             painter.drawImage(100, y_offset, logo_image.scaled(logo_width, logo_height, Qt.AspectRatioMode.KeepAspectRatio))
             y_offset += logo_height + 10
 
             y_offset += line_height
-            painter.drawText(100, y_offset, "-" * 50)  # Separator line
+            painter.drawText(100, y_offset, "-" * 50)
             y_offset += line_height
+
             for row in selected_rows:
                 self.connection = sqlite3.connect("pos_database.db")
                 cursor = self.connection.cursor()
@@ -424,7 +485,6 @@ class UserPage(QWidget):
                 bike_name = bike_data[0] if bike_data else "Unknown"
                 bike_model = bike_data[1] if bike_data else "Unknown"
 
-                # Get latest payment for this chassis_no (from payments table)
                 cursor.execute("""
                     SELECT payment_amount
                     FROM payments
@@ -435,10 +495,16 @@ class UserPage(QWidget):
                 payment_row = cursor.fetchone()
                 add_payment = payment_row[0] if payment_row and payment_row[0] not in (None, '', 0, '0', 'None') else None
 
-                # Get discount from sales table
                 cursor.execute("SELECT discount FROM sales WHERE chassis_no = ?", (chassis_no,))
                 discount_row = cursor.fetchone()
                 discount = discount_row[0] if discount_row and discount_row[0] not in (None, '', 0, '0', 'None') else None
+
+                cursor.execute(
+                    "SELECT invoice_number, installment_description FROM sales WHERE chassis_no = ?", (chassis_no,)
+                )
+                sale_data = cursor.fetchone()  # <-- changed variable name here
+                invoice_number = sale_data[0] if sale_data and sale_data[0] not in (None, "", 0, "0") else None
+                install_desc = sale_data[1] if sale_data and sale_data[1] not in (None, "", 0, "0") else None
 
                 painter.drawText(100, y_offset, f"User Name:  {row['Client Name']}")
                 y_offset += line_height
@@ -456,24 +522,38 @@ class UserPage(QWidget):
                 y_offset += line_height
                 painter.drawText(100, y_offset, "-" * 50)
                 y_offset += line_height
+                if invoice_number:
+                    painter.drawText(100, y_offset, f"Invoice Number: {invoice_number}")
+                    y_offset += line_height
                 if row.get('Payment Method') not in (None, '', 'None'):
                     painter.drawText(100, y_offset, f"Payment Method: {row['Payment Method']}")
                     y_offset += line_height
 
                 painter.drawText(100, y_offset, f"Sale Price:  {row['Sale Price']}")
                 y_offset += line_height
-                
-                # Remaining Amount
+
                 if row['Remaining Amount'] not in (None, '', '0', '0.0', 0, 0.0, 'None'):
                     painter.drawText(100, y_offset, f"Remaining Amount: {row['Remaining Amount']}")
                     y_offset += line_height
 
-                # Monthly Installment
                 if row['Monthly Installment'] not in (None, '', '0', '0.0', 0, 0.0, 'None'):
                     painter.drawText(100, y_offset, f"Monthly Installment: {row['Monthly Installment']}")
                     y_offset += line_height
 
-                # Duration
+                if install_desc:
+                    description_label = "Installment Description: "
+                    max_width = 500   # Adjust this value lower to keep within the page
+                    left_margin = 100
+                    top = y_offset
+
+                    full_text = description_label + install_desc
+
+                    text_rect = painter.boundingRect(left_margin, top, max_width, 1000, Qt.TextFlag.TextWordWrap, full_text)
+                    painter.drawText(text_rect, Qt.TextFlag.TextWordWrap, full_text)
+                    y_offset += text_rect.height() + 10
+
+                    y_offset += line_height
+
                 if row['Duration'] not in (None, '', '0', 0, 'None'):
                     painter.drawText(100, y_offset, f"Duration: {row['Duration']}")
                     y_offset += line_height
@@ -481,7 +561,7 @@ class UserPage(QWidget):
                 if add_payment is not None:
                     painter.drawText(100, y_offset, f"Add Payment: {add_payment}")
                     y_offset += line_height
-                    
+
                 if discount is not None:
                     painter.drawText(100, y_offset, f"Discount: {discount}")
                     y_offset += line_height
@@ -499,6 +579,7 @@ class UserPage(QWidget):
                 self.connection.close()
 
             painter.end()
+
 
 
     
