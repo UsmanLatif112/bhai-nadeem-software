@@ -540,6 +540,18 @@ class UserPage(QWidget):
                     painter.drawText(100, y_offset, f"Monthly Installment: {row['Monthly Installment']}")
                     y_offset += line_height
 
+                if row['Duration'] not in (None, '', '0', 0, 'None'):
+                    painter.drawText(100, y_offset, f"Duration: {row['Duration']}")
+                    y_offset += line_height
+
+                if add_payment is not None:
+                    painter.drawText(100, y_offset, f"Add Payment: {add_payment}")
+                    y_offset += line_height
+
+                if discount is not None:
+                    painter.drawText(100, y_offset, f"Discount: {discount}")
+                    y_offset += line_height
+
                 if install_desc:
                     description_label = "Installment Description: "
                     max_width = 500   # Adjust this value lower to keep within the page
@@ -553,19 +565,7 @@ class UserPage(QWidget):
                     y_offset += text_rect.height() + 10
 
                     y_offset += line_height
-
-                if row['Duration'] not in (None, '', '0', 0, 'None'):
-                    painter.drawText(100, y_offset, f"Duration: {row['Duration']}")
-                    y_offset += line_height
-
-                if add_payment is not None:
-                    painter.drawText(100, y_offset, f"Add Payment: {add_payment}")
-                    y_offset += line_height
-
-                if discount is not None:
-                    painter.drawText(100, y_offset, f"Discount: {discount}")
-                    y_offset += line_height
-
+                    
                 painter.drawText(100, y_offset, "-" * 50)
                 y_offset += line_height
                 font.setBold(True)
