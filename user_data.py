@@ -162,7 +162,6 @@ class UserPage(QWidget):
             "Installment\nDescription",  
             "Action",
             "View"
-            "Action"
         ]
         
         tooltips = [
@@ -184,7 +183,6 @@ class UserPage(QWidget):
             "Installment Description", 
             "Action",
             "view"
-            "Action"
         ]
 
         # Set horizontal header labels
@@ -380,17 +378,17 @@ class UserPage(QWidget):
                         item.setToolTip(f"{tooltips[col_idx]}: {col_data}")
                     self.table.setItem(row_idx, col_idx, item)
 
-            # Set tooltips for action/view buttons as well
-            if row_data[9] not in [None, 'None', '', 'net cash', 'Net Cash', 'NET CASH']:
-                manage_btn = QPushButton("Manage")
-                manage_btn.setToolTip("Open payment management dialog")
-                manage_btn.clicked.connect(lambda _, sale_id=row_data[4]: self.open_new_sale_dialog(sale_id))
-                self.table.setCellWidget(row_idx, 16, manage_btn)
+                # Set tooltips for action/view buttons as well
+                if row_data[9] not in [None, 'None', '', 'net cash', 'Net Cash', 'NET CASH']:
+                    manage_btn = QPushButton("Manage")
+                    manage_btn.setToolTip("Open payment management dialog")
+                    manage_btn.clicked.connect(lambda _, sale_id=row_data[4]: self.open_new_sale_dialog(sale_id))
+                    self.table.setCellWidget(row_idx, 16, manage_btn)
 
-                view_btn = QPushButton("View")
-                view_btn.setToolTip("View installment page")
-                view_btn.clicked.connect(lambda _, chassis_no=row_data[4]: self.open_installment_page(chassis_no))
-                self.table.setCellWidget(row_idx, 17, view_btn)
+                    view_btn = QPushButton("View")
+                    view_btn.setToolTip("View installment page")
+                    view_btn.clicked.connect(lambda _, chassis_no=row_data[4]: self.open_installment_page(chassis_no))
+                    self.table.setCellWidget(row_idx, 17, view_btn)
 
         self.connection.close()
 
