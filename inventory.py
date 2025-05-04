@@ -312,6 +312,8 @@ class AddInventoryDialog(QDialog):
         self.completer.setFilterMode(Qt.MatchFlag.MatchContains)
         self.client_name.setCompleter(self.completer)
 
+        self.client_name.editingFinished.connect(self.autofill_client_info)
+        
         layout.addRow("Bike Name:", self.bike_name)
         layout.addRow("Bike Model:", self.bike_model)
         layout.addRow("Chassis No (Unique):", self.chassis_no)
@@ -340,7 +342,39 @@ class AddInventoryDialog(QDialog):
         self.completer.model().setStringList(client_names)
         super().showEvent(event)
 
+    def autofill_client_info(self):
+        name = self.client_name.text().strip()
+        if not name:
+            self.client_mobile.clear()
+            self.client_cnic.clear()
+            # Optionally make editable for new entry
+            self.client_mobile.setReadOnly(False)
+            self.client_cnic.setReadOnly(False)
+            return
 
+        conn = sqlite3.connect("pos_database.db")
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT client_mobile, client_cnic FROM usersmanagement WHERE client_name = ?",
+            (name,)
+        )
+        result = cursor.fetchone()
+        conn.close()
+
+        if result:
+            # Autofill fields if found
+            self.client_mobile.setText(result[0] if result[0] else "")
+            self.client_cnic.setText(result[1] if result[1] else "")
+            # Optionally: Lock fields if you don't want them changed for existing clients
+            # self.client_mobile.setReadOnly(True)
+            # self.client_cnic.setReadOnly(True)
+        else:
+            # Clear fields for new user entry
+            self.client_mobile.clear()
+            self.client_cnic.clear()
+            self.client_mobile.setReadOnly(False)
+            self.client_cnic.setReadOnly(False)
+            
     def add_inventory(self):
         conn = sqlite3.connect("pos_database.db")
         cursor = conn.cursor()

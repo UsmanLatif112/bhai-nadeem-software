@@ -376,6 +376,7 @@ class NewSaleDialog(QDialog):
         self.installment_checkbox.toggled.connect(self.toggle_installment_fields)
         self.advance_cash.textChanged.connect(self.calculate_installments)
         self.duration.currentIndexChanged.connect(self.calculate_installments)
+        self.client_name.editingFinished.connect(self.autofill_client_info)
     def fetch_purchase_price(self):
         conn = sqlite3.connect("pos_database.db")
         cursor = conn.cursor()
@@ -452,11 +453,38 @@ class NewSaleDialog(QDialog):
         self.completer.model().setStringList(client_names)
         super().showEvent(event)
 
+    def autofill_client_info(self):
+        name = self.client_name.text().strip()
+        if not name:
+            self.client_mobile.clear()
+            self.client_cnic.clear()
+            self.client_mobile.setReadOnly(False)
+            self.client_cnic.setReadOnly(False)
+            return
+
+        conn = sqlite3.connect("pos_database.db")
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT client_mobile, client_cnic FROM usersmanagement WHERE client_name = ?",
+            (name,)
+        )
+        result = cursor.fetchone()
+        conn.close()
+
+        if result:
+            self.client_mobile.setText(result[0] if result[0] else "")
+            self.client_cnic.setText(result[1] if result[1] else "")
+        else:
+            self.client_mobile.clear()
+            self.client_cnic.clear()
+            self.client_mobile.setReadOnly(False)
+            self.client_cnic.setReadOnly(False)
+            
     def submit_sale(self):
         try:
             sale_price = float(self.sale_price.text()) if self.sale_price.text() else 0
             advance_payment = float(self.advance_cash.text()) if self.advance_cash.text() else 0
-            monthly_installment = float(self.monthly_installment.text()) if self.monthly_installment.text() else 0
+            monthly_installment = int(round(float(self.monthly_installment.text()))) if self.monthly_installment.text() else 0
             profit = float(self.profit.text()) if self.profit.text() else 0
         except ValueError:
             QMessageBox.warning(self, "Invalid Input", "Please ensure all prices are valid numbers.")
@@ -469,7 +497,7 @@ class NewSaleDialog(QDialog):
             months = int(self.duration.currentText())
             remaining_amount = total_sale_price - advance_payment
             if months > 0:
-                monthly_installment = remaining_amount / months
+                monthly_installment = int(round(remaining_amount / months))
 
         try:
             cursor = self.connection.cursor()
@@ -550,21 +578,6 @@ class NewSaleDialog(QDialog):
                             sales_id_data
                         )
                     )
-
-            # user_exists = cursor.execute(
-            #     "SELECT EXISTS(SELECT 1 FROM usersmanagement WHERE client_cnic = ?)",
-            #     (self.client_cnic.text(),)
-            # ).fetchone()[0]
-            # if user_exists: 
-            #     cursor.execute(
-            #         "UPDATE usersmanagement SET sales_id = ? WHERE client_cnic = ?",
-            #         (sales_id_data, self.client_cnic.text())
-            #     )
-            # else:
-            #     cursor.execute(
-            #         "INSERT INTO usersmanagement (client_name, client_mobile, client_cnic, date, sales_id) VALUES (?, ?, ?, ?, ?)",
-            #         (self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.sale_date.date().toString("yyyy-MM-dd"), sales_id_data)
-            #     )
                 
             self.connection.commit()
             QMessageBox.information(self, "Success", "Sale added successfully.")

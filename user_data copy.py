@@ -525,6 +525,7 @@ class UserPage(QWidget):
         dialog = NewSaleDialog(chassis_no,client_name, monthly_installment, duration, remaining_amount, parent=self)
         dialog.exec()
 
+
 class NewSaleDialog(QDialog):
     def __init__(self, chassis_no, client_name, monthly_installment, duration, remaining_amount, parent=None):
         super().__init__(parent)
@@ -540,7 +541,6 @@ class NewSaleDialog(QDialog):
         self.duration = QComboBox()
         self.duration.addItems([str(i) for i in range(1, 13)])
         self.duration.setCurrentText(str(duration))
-        self.duration.setEnabled(False)  # Disable changing duration
         self.monthly_installment = QLineEdit(str(monthly_installment))
         self.monthly_installment.setReadOnly(True)
         self.remaining_amount = QLineEdit(str(int(remaining_amount)))
@@ -561,15 +561,15 @@ class NewSaleDialog(QDialog):
         self.remaining_amount_previous = int(remaining_amount)
         self.monthly_installment_previous = str(monthly_installment)
 
-        self.payment_no.textChanged.connect(self.calculate_remaining)
-        self.discount.textChanged.connect(self.calculate_remaining)
+        self.payment_no.textChanged.connect(self.calculate_installments)
+        self.discount.textChanged.connect(self.calculate_installments)
 
         self.submit_button = QPushButton("Update Payment")
         self.submit_button.clicked.connect(self.submit_sale)
         layout.addWidget(self.submit_button)
-        
-    def calculate_remaining(self):
-        """Update only the remaining amount, not monthly installment."""
+
+    def calculate_installments(self):
+        """Update remaining and monthly installment, factoring in discount."""
         try:
             payment_text = self.payment_no.text()
             payment_amount = int(payment_text) if payment_text.strip() else 0
@@ -581,11 +581,9 @@ class NewSaleDialog(QDialog):
                 new_remaining_amount = 0
             self.remaining_amount.setText(str(new_remaining_amount))
 
-            # Set monthly installment to 0 if remaining is zero
-            if new_remaining_amount == 0:
-                self.monthly_installment.setText("0")
-            else:
-                self.monthly_installment.setText(self.monthly_installment_previous)
+            duration = int(self.duration.currentText())
+            new_monthly_installment = new_remaining_amount // duration if duration > 0 else new_remaining_amount
+            self.monthly_installment.setText(str(new_monthly_installment))
         except ValueError:
             self.remaining_amount.setText(str(self.remaining_amount_previous))
             self.monthly_installment.setText(self.monthly_installment_previous)
@@ -603,7 +601,6 @@ class NewSaleDialog(QDialog):
         chassis_no = self.chassis_no.text()
         client_name = self.client_name.text()
         duration = int(self.duration.currentText())
-        # Monthly installment is not recalculated here!
         monthly_installment = float(self.monthly_installment.text())
         remaining_amount = float(self.remaining_amount.text())
 
@@ -637,6 +634,8 @@ class NewSaleDialog(QDialog):
             self.accept()
         except sqlite3.Error as e:
             QMessageBox.warning(self, "Error", f"Failed to update sale details: {str(e)}")
+
+
 
 if __name__ == "__main__":
     app = QApplication([])
