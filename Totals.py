@@ -126,9 +126,9 @@ class TotalsPage(QMainWindow):
             "Total\nExpenses Count",
             "Total\nExpenses Sum",
             "Profit\nAfter Expense",
-            "Total\nRemaining Amount",
+            "Total\nRemaining\nAmount",
             "Cash\nIn Hand",
-            "Total Cash\nAfter Remaining"
+            "Total Cash\nAfter\nRemaining"
         ]
         # The tooltips for the new columns
         tooltips = [
