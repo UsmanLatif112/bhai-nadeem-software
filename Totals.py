@@ -114,10 +114,12 @@ class TotalsPage(QMainWindow):
 
     def setup_table(self):
         table = QTableWidget()
-        table.setColumnCount(11)
+        table.setColumnCount(13)  # Updated to 13 columns
         headers = [
             "Total\nPurchase Count",
             "Total\nPurchase Price",
+            "Total\nInventory",          # New column
+            "Inventory\nPurchasing",     # New column
             "Total\nSales Count",
             "Total Sales\nSum",
             "Total Profit",
@@ -128,9 +130,12 @@ class TotalsPage(QMainWindow):
             "Cash\nIn Hand",
             "Total Cash\nAfter Remaining"
         ]
+        # The tooltips for the new columns
         tooltips = [
             "Number of purchases (inventory items bought) in this period",
             "Sum of all purchase prices",
+            "Total count of items in inventory with status 'purchased'",  # Tooltip for new column
+            "Sum of purchase prices of items in inventory with status 'purchased'",  # Tooltip for new column
             "Number of sales in this period",
             "Sum of all sales prices",
             "Total profit (sales sum minus purchase prices)",
@@ -146,6 +151,7 @@ class TotalsPage(QMainWindow):
             item = QTableWidgetItem(header)
             item.setToolTip(tip)
             table.setHorizontalHeaderItem(i, item)
+        
         header = table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         table.setStyleSheet("""
@@ -312,7 +318,6 @@ class TotalsPage(QMainWindow):
             self.date_picker_end.setEnabled(False)
             
             
-            
     def load_totals(self):
         conn = sqlite3.connect("pos_database.db")
         cursor = conn.cursor()
@@ -324,78 +329,93 @@ class TotalsPage(QMainWindow):
             sales_condition = f"DATE(sale_date) = '{today}'"
             inventory_condition = f"DATE(purchase_date) = '{today}'"
             expense_condition = f"DATE(expense_date) = '{today}'"
+            inventory_filter_condition = f"DATE(purchase_date) = '{today}'"  # For inventory filtering
         elif selected_filter == "7 Days":
             sales_condition = f"DATE(sale_date) >= DATE('{today}', '-7 days')"
             inventory_condition = f"DATE(purchase_date) >= DATE('{today}', '-7 days')"
             expense_condition = f"DATE(expense_date) >= DATE('{today}', '-7 days')"
+            inventory_filter_condition = f"DATE(purchase_date) >= DATE('{today}', '-7 days')"  # For inventory filtering
         elif selected_filter == "1 Month":
             start_date = QDate.currentDate().addMonths(-1).toString("yyyy-MM-dd")
             sales_condition = f"DATE(sale_date) BETWEEN '{start_date}' AND '{today}'"
             inventory_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{today}'"
             expense_condition = f"DATE(expense_date) BETWEEN '{start_date}' AND '{today}'"
+            inventory_filter_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{today}'"  # For inventory filtering
         elif selected_filter == "3 Months":
             start_date = QDate.currentDate().addMonths(-3).toString("yyyy-MM-dd")
             sales_condition = f"DATE(sale_date) BETWEEN '{start_date}' AND '{today}'"
             inventory_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{today}'"
             expense_condition = f"DATE(expense_date) BETWEEN '{start_date}' AND '{today}'"
+            inventory_filter_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{today}'"  # For inventory filtering
         elif selected_filter == "6 Months":
             start_date = QDate.currentDate().addMonths(-6).toString("yyyy-MM-dd")
             sales_condition = f"DATE(sale_date) BETWEEN '{start_date}' AND '{today}'"
             inventory_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{today}'"
             expense_condition = f"DATE(expense_date) BETWEEN '{start_date}' AND '{today}'"
+            inventory_filter_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{today}'"  # For inventory filtering
         elif selected_filter == "12 Months":
             start_date = QDate.currentDate().addMonths(-12).toString("yyyy-MM-dd")
             sales_condition = f"DATE(sale_date) BETWEEN '{start_date}' AND '{today}'"
             inventory_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{today}'"
             expense_condition = f"DATE(expense_date) BETWEEN '{start_date}' AND '{today}'"
+            inventory_filter_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{today}'"  # For inventory filtering
         elif selected_filter == "Custom":
             start_date = self.date_picker_start.date().toString("yyyy-MM-dd")
             end_date = self.date_picker_end.date().toString("yyyy-MM-dd")
             sales_condition = f"DATE(sale_date) BETWEEN '{start_date}' AND '{end_date}'"
             inventory_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{end_date}'"
             expense_condition = f"DATE(expense_date) BETWEEN '{start_date}' AND '{end_date}'"
+            inventory_filter_condition = f"DATE(purchase_date) BETWEEN '{start_date}' AND '{end_date}'"  # For inventory filtering
         else:
             sales_condition = "1=1"
             inventory_condition = "1=1"
             expense_condition = "1=1"
+            inventory_filter_condition = "1=1"
 
         # Purchases
         cursor.execute(f"SELECT COUNT(*), COALESCE(SUM(purchase_price), 0) FROM inventory WHERE {inventory_condition}")
         total_purchase_count, total_purchase_price = cursor.fetchone()
 
+        # New Queries for Total Inventory and Inventory Purchasing
+        cursor.execute(f"""
+            SELECT COUNT(*), COALESCE(SUM(purchase_price), 0)
+            FROM inventory
+            WHERE product_status = 'Purchased' AND {inventory_filter_condition}
+        """)
+        total_inventory_count, inventory_purchasing_sum = cursor.fetchone()
+
         # Sales
         cursor.execute(f"""
             SELECT
-                COUNT(*),                        -- Sales count
-                COALESCE(SUM(sale_price), 0),    -- Total sales sum
-                COALESCE(SUM(remaining_amount), 0) -- Total remaining amount
+                COUNT(*),                        
+                COALESCE(SUM(sale_price), 0),    
+                COALESCE(SUM(remaining_amount), 0) 
             FROM sales
             WHERE {sales_condition}
         """)
         total_sales_count, total_sales_sum, total_remaining_amount = cursor.fetchone()
 
-        # Expenses (count and sum)
+        # Total profit from sales table
+        cursor.execute(f"SELECT COALESCE(SUM(profit), 0) FROM sales WHERE {sales_condition}")
+        total_profit = cursor.fetchone()[0]
+
+        # Expenses
         cursor.execute(f"SELECT COUNT(*), COALESCE(SUM(expense_price), 0) FROM expense WHERE {expense_condition}")
         total_expenses_count, total_expenses_sum = cursor.fetchone()
 
-        # Profit
-        total_profit = total_sales_sum - total_purchase_price
-
-        # Cash in Hand (Total Sales - Expenses)
+        # Cash in Hand
         cash_in_hand = total_sales_sum - total_expenses_sum
-
-        # Total Sales After Remaining Amount (Cash in Hand - Remaining)
         total_sales_after_remaining = cash_in_hand - total_remaining_amount
-
-        # Profit after expense
         profit_after_expense = total_profit - total_expenses_sum
 
         values = [
             int(total_purchase_count),            # Total Purchase Count
             int(total_purchase_price),            # Total Purchase Price
+            int(total_inventory_count),           # Total Inventory Count (Purchased)
+            int(inventory_purchasing_sum),       # Inventory Purchasing (Sum of Purchase Prices)
             int(total_sales_count),               # Total Sales Count
             int(total_sales_sum),                 # Total Sales Sum
-            int(total_profit),                    # Total Profit
+            int(total_profit),                    # Total Profit from Sales
             int(total_expenses_count),            # Total Expenses Count
             int(total_expenses_sum),              # Total Expenses Sum
             int(profit_after_expense),            # Profit After Expense
@@ -407,9 +427,11 @@ class TotalsPage(QMainWindow):
         cell_tooltips = [
             "Number of purchases = ",
             "Sum of Purchase prices = ",
+            "Total inventory count (purchased) = ",  # Tooltip for new column
+            "Sum of inventory purchases (purchased) = ",  # Tooltip for new column
             "Number of sales = ",
             "Sum of all sales prices = ",
-            "Total profit (sales sum - purchase prices) = ",
+            "Total profit (from sales table) = ",
             "Number of expenses = ",
             "Sum of all expenses = ",
             "Profit after deducting expenses = ",
