@@ -134,9 +134,9 @@ cursor = connection.cursor()
 
 # Update the sale_date where id is 3
 cursor.execute('''
-    UPDATE sales
-    SET sale_date = '2025-04-30'
-    WHERE id = 36;
+    UPDATE inventory
+    SET purchase_price = '53500'
+    WHERE id = 50;
 ''')
 
 # Commit the changes
@@ -146,3 +146,4 @@ connection.commit()
 connection.close()
 
 print("Sale date updated successfully.")
+# 2199668  AZU 1021

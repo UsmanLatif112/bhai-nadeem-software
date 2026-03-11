@@ -2,7 +2,7 @@ import sqlite3
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout,
     QTableWidget, QTableWidgetItem, QPushButton, QMessageBox,
-    QDialog, QLineEdit, QFormLayout, QHeaderView
+    QDialog, QLineEdit, QFormLayout, QHeaderView,QComboBox
 )
 from PyQt6.QtGui import QPixmap, QFont
 from PyQt6.QtCore import Qt
@@ -285,6 +285,49 @@ class InventoryPage(QMainWindow):
 
 
 
+# class AddInventoryDialog(QDialog):
+#     def __init__(self):
+#         super().__init__()
+#         self.setWindowTitle("Add New Inventory")
+#         self.setGeometry(300, 300, 400, 300)
+#         layout = QFormLayout(self)
+
+#         self.bike_name = QLineEdit()
+#         self.bike_model = QLineEdit()
+#         self.chassis_no = QLineEdit()
+#         self.reg_no = QLineEdit()
+#         self.client_name = QLineEdit()
+#         self.client_mobile = QLineEdit()
+#         self.client_cnic = QLineEdit()
+#         self.purchase_date = QDateEdit()
+#         self.purchase_date.setCalendarPopup(True)
+#         self.purchase_date.setDate(QDate.currentDate())
+#         self.purchase_date.setDisplayFormat("yyyy-MM-dd")
+#         self.purchase_price = QLineEdit()
+
+#         # Set up completer for client name
+#         client_names = self.get_client_names()
+#         self.completer = QCompleter(client_names)
+#         self.completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+#         self.completer.setFilterMode(Qt.MatchFlag.MatchContains)
+#         self.client_name.setCompleter(self.completer)
+
+#         self.client_name.editingFinished.connect(self.autofill_client_info)
+        
+#         layout.addRow("Bike Name:", self.bike_name)
+#         layout.addRow("Bike Model:", self.bike_model)
+#         layout.addRow("Chassis No (Unique):", self.chassis_no)
+#         layout.addRow("Reg No (Optional):", self.reg_no)
+#         layout.addRow("Client Name:", self.client_name)
+#         layout.addRow("Client Mobile:", self.client_mobile)
+#         layout.addRow("Client CNIC:", self.client_cnic)
+#         layout.addRow("Purchase Date", self.purchase_date)
+#         layout.addRow("Purchase Price:", self.purchase_price)
+
+#         self.submit_button = QPushButton("Add Inventory")
+#         self.submit_button.clicked.connect(self.add_inventory)
+#         layout.addWidget(self.submit_button)
+
 class AddInventoryDialog(QDialog):
     def __init__(self):
         super().__init__()
@@ -292,7 +335,17 @@ class AddInventoryDialog(QDialog):
         self.setGeometry(300, 300, 400, 300)
         layout = QFormLayout(self)
 
-        self.bike_name = QLineEdit()
+        # Bike name as a dynamic dropdown (QComboBox)
+        self.bike_name = QComboBox()
+        self.bike_name.setEditable(True)  # allow typing custom names
+
+        # Predefined options
+        bike_options = ["CD 70", "CG 125", "China", "Electric", "Mobile"]
+        self.bike_name.addItems(bike_options)
+
+        # Optional: helper text for user
+        self.bike_name.setPlaceholderText("Select or type bike name")
+
         self.bike_model = QLineEdit()
         self.chassis_no = QLineEdit()
         self.reg_no = QLineEdit()
@@ -387,10 +440,26 @@ class AddInventoryDialog(QDialog):
                 return  # Stop further processing if the input is invalid
 
             # Insert new inventory item, including validated purchase price
+            # cursor.execute(
+            #     "INSERT INTO inventory (bike_name, bike_model, chassis_no, reg_no, client_name, client_mobile, client_cnic, purchase_date, purchase_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            #     (self.bike_name.text(), self.bike_model.text(), self.chassis_no.text(), self.reg_no.text(), self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.purchase_date.date().toString("yyyy-MM-dd"), purchase_price)
+            # )
+            
             cursor.execute(
                 "INSERT INTO inventory (bike_name, bike_model, chassis_no, reg_no, client_name, client_mobile, client_cnic, purchase_date, purchase_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (self.bike_name.text(), self.bike_model.text(), self.chassis_no.text(), self.reg_no.text(), self.client_name.text(), self.client_mobile.text(), self.client_cnic.text(), self.purchase_date.date().toString("yyyy-MM-dd"), purchase_price)
+                (
+                    self.bike_name.currentText(),         # QComboBox -> currentText()
+                    self.bike_model.text(),               # still QLineEdit (unless you changed it too)
+                    self.chassis_no.text(),
+                    self.reg_no.text(),
+                    self.client_name.text(),
+                    self.client_mobile.text(),
+                    self.client_cnic.text(),
+                    self.purchase_date.date().toString("yyyy-MM-dd"),
+                    purchase_price
+                )
             )
+            
             sales_id_data = cursor.lastrowid 
             cnic = self.client_cnic.text().strip()
             name = self.client_name.text().strip()
