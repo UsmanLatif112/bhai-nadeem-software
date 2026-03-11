@@ -40,23 +40,109 @@
 # print("Updated invoice numbers for all provided chassis numbers.")
 
 
+# import sqlite3
+
+# # Example data
+# chassis_list = ["Jf593060", "JF593070", "152065","ED072212","JF553095","EC831495","JF368908","JF041622","HA134446","HA052516","JF553025"]
+# desc_list = ["Clear amount on  1/05/2025", "None", "None", "None", "10/04/2025 15000 amount disount 15000 agr anhi deta to koi discount nahi pore 200000 qeemat ho gi", "150000 amount 01/06/2025 agr time pa aye payment to 15000 discount", "30000 amount 10/05/2025 - 30000 amount 10/07/2025 - 40000 amount 10/10/2025 - 40000 amount 10/01/2026", "20000 amount 15/01/2025 baki amount 8/04/2025 ko clear krni hy", "None", "None", "None"]
+
+# assert len(chassis_list) == len(desc_list), "Lists must be the same length!"
+
+# conn = sqlite3.connect("pos_database.db")
+# cursor = conn.cursor()
+
+# for chassis, desc in zip(chassis_list, desc_list):
+#     cursor.execute(
+#         "UPDATE sales SET installment_description = ? WHERE chassis_no = ?",
+#         (desc, chassis)
+#     )
+
+# conn.commit()
+# conn.close()
+# print("Updated descriptions for all provided chassis numbers.")
+
+
+# import sqlite3
+
+# # Connect to the database
+# connection = sqlite3.connect('pos_database.db')
+# cursor = connection.cursor()
+
+# # Update the chassis number for the row where id is 19
+# cursor.execute('''
+#     UPDATE inventory
+#     SET chassis_no = 'ED160857'
+#     WHERE id = 36;
+# ''')
+
+# # Commit the changes
+# connection.commit()
+
+# # Close the connection
+# connection.close()
+# print("Updated descriptions for all provided chassis numbers.")
+
+
+# import sqlite3
+
+# # Connect to the database
+# connection = sqlite3.connect('pos_database.db')
+# cursor = connection.cursor()
+
+# # Query to fetch all sales records where the status is 'Sold'
+# cursor.execute('''
+#     SELECT * FROM sales
+#     WHERE product_status = 'Sold';
+# ''')
+
+# # Fetch all results
+# sold_records = cursor.fetchall()
+
+# # Print each record found
+# print(f"Total Sold Records Found: {len(sold_records)}")
+# for record in sold_records:
+#     print(record)
+
+# # Close the connection
+# connection.close()
+
+
+# # Connect to the database
+# connection = sqlite3.connect('pos_database.db')
+# cursor = connection.cursor()
+
+# # Update the chassis number for the row where id is 19
+# cursor.execute('''
+#     UPDATE sales
+#     SET sale_date = '1125 (With Letter)'
+#     WHERE chassis_no = "ED017127";
+# ''')
+
+# # Commit the changes
+# connection.commit()
+
+# # Close the connection
+# connection.close()
+# print("Updated descriptions for all provided chassis numbers.")
+
+
 import sqlite3
 
-# Example data
-chassis_list = ["Jf593060", "JF593070", "152065","ED072212","JF553095","EC831495","JF368908","JF041622","HA134446","HA052516","JF553025"]
-desc_list = ["Clear amount on  1/05/2025", "None", "None", "None", "10/04/2025 15000 amount disount 15000 agr anhi deta to koi discount nahi pore 200000 qeemat ho gi", "150000 amount 01/06/2025 agr time pa aye payment to 15000 discount", "30000 amount 10/05/2025 - 30000 amount 10/07/2025 - 40000 amount 10/10/2025 - 40000 amount 10/01/2026", "20000 amount 15/01/2025 baki amount 8/04/2025 ko clear krni hy", "None", "None", "None"]
+# Connect to the database
+connection = sqlite3.connect('pos_database.db')
+cursor = connection.cursor()
 
-assert len(chassis_list) == len(desc_list), "Lists must be the same length!"
+# Update the sale_date where id is 3
+cursor.execute('''
+    UPDATE sales
+    SET sale_date = '2025-04-30'
+    WHERE id = 36;
+''')
 
-conn = sqlite3.connect("pos_database.db")
-cursor = conn.cursor()
+# Commit the changes
+connection.commit()
 
-for chassis, desc in zip(chassis_list, desc_list):
-    cursor.execute(
-        "UPDATE sales SET installment_description = ? WHERE chassis_no = ?",
-        (desc, chassis)
-    )
+# Close the connection
+connection.close()
 
-conn.commit()
-conn.close()
-print("Updated descriptions for all provided chassis numbers.")
+print("Sale date updated successfully.")
